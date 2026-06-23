@@ -55,7 +55,7 @@ export default function Settings() {
 
       <div className="text-center text-xs text-gray-400 space-y-1">
         <p>Finance Tracker v0.2.0</p>
-        <p>Data stored in local SQLite database via Prisma.</p>
+        <p>All data stored locally in your browser.</p>
       </div>
     </div>
   )
