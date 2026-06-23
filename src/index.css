@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -7,25 +9,32 @@
 }
 
 body {
-  @apply bg-gray-50 text-gray-900;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  @apply bg-slate-50 text-slate-800;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
-/* Safe area for mobile notch/home indicator */
 .pb-safe {
   padding-bottom: max(1rem, env(safe-area-inset-bottom));
 }
 
 @layer components {
   .input {
-    @apply w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50;
+    @apply w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent bg-white transition-shadow;
   }
 
   .btn-primary {
-    @apply bg-blue-600 text-white rounded-xl py-2.5 text-sm font-semibold hover:bg-blue-700 transition-colors;
+    @apply bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-2xl py-3 text-sm font-semibold hover:from-violet-700 hover:to-indigo-700 transition-all shadow-sm;
   }
 
   .btn-secondary {
-    @apply bg-gray-100 text-gray-700 rounded-xl py-2.5 text-sm font-semibold hover:bg-gray-200 transition-colors;
+    @apply bg-slate-100 text-slate-700 rounded-2xl py-3 text-sm font-semibold hover:bg-slate-200 transition-colors;
+  }
+
+  .card {
+    @apply bg-white rounded-2xl border border-slate-100 p-4 shadow-sm;
+  }
+
+  .card-hover {
+    @apply card hover:shadow-md transition-shadow;
   }
 }

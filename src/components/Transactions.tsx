@@ -7,14 +7,8 @@ import { api } from '../utils/api'
 import { Modal, FormField } from './Accounts'
 
 const emptyForm = {
-  type: 'expense' as TransactionType,
-  amount: '',
-  category: 'Household' as Category,
-  description: '',
-  accountId: '',
-  date: todayISO(),
-  merchant: '',
-  notes: '',
+  type: 'expense' as TransactionType, amount: '', category: 'Household' as Category,
+  description: '', accountId: '', date: todayISO(), merchant: '', notes: '',
 }
 
 export default function Transactions() {
@@ -51,21 +45,13 @@ export default function Transactions() {
 
   async function save() {
     const payload = {
-      type: form.type,
-      amount: parseFloat(form.amount) || 0,
-      category: form.category,
-      description: form.description.trim(),
-      accountId: form.accountId,
-      date: form.date,
-      merchant: form.merchant.trim(),
-      notes: form.notes.trim(),
+      type: form.type, amount: parseFloat(form.amount) || 0, category: form.category,
+      description: form.description.trim(), accountId: form.accountId, date: form.date,
+      merchant: form.merchant.trim(), notes: form.notes.trim(),
     }
     if (!payload.amount || !payload.accountId) return
-    if (editing) {
-      await api.updateTransaction(editing.id, payload)
-    } else {
-      await api.createTransaction(payload)
-    }
+    if (editing) await api.updateTransaction(editing.id, payload)
+    else await api.createTransaction(payload)
     await refreshTransactions()
     setShowForm(false)
   }
@@ -80,13 +66,16 @@ export default function Transactions() {
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between pt-2">
-        <h1 className="text-xl font-bold text-gray-900">Transactions</h1>
+        <div>
+          <h1 className="text-xl font-extrabold text-slate-900">Activity</h1>
+          <p className="text-xs text-slate-400">{filtered.length} transaction{filtered.length !== 1 ? 's' : ''}</p>
+        </div>
         <div className="flex gap-2">
           <button onClick={() => setShowFilter(!showFilter)}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium border ${showFilter ? 'bg-blue-50 border-blue-200 text-blue-600' : 'border-gray-200 text-gray-600'}`}>
-            <Filter size={14} /> Filter
+            className={`flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium border transition-colors ${showFilter ? 'bg-violet-50 border-violet-200 text-violet-600' : 'border-slate-200 text-slate-600'}`}>
+            <Filter size={14} />
           </button>
-          <button onClick={openAdd} className="flex items-center gap-1.5 bg-blue-600 text-white rounded-lg px-3 py-1.5 text-sm font-medium">
+          <button onClick={openAdd} className="flex items-center gap-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl px-3.5 py-2 text-sm font-semibold shadow-sm">
             <Plus size={16} /> Add
           </button>
         </div>
@@ -95,15 +84,16 @@ export default function Transactions() {
       {showFilter && (
         <div className="flex gap-2">
           {(['all', 'income', 'expense', 'transfer'] as const).map(f => (
-            <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-full text-xs font-medium capitalize ${filter === f ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'}`}>{f}</button>
+            <button key={f} onClick={() => setFilter(f)} className={`px-3.5 py-2 rounded-xl text-xs font-semibold capitalize transition-colors ${filter === f ? 'bg-violet-600 text-white' : 'bg-white text-slate-600 border border-slate-200'}`}>{f}</button>
           ))}
         </div>
       )}
 
       {filtered.length === 0 && (
-        <div className="text-center py-16 text-gray-400">
-          <ArrowLeftRight size={40} className="mx-auto mb-3 opacity-40" />
-          <p className="font-medium">No transactions yet</p>
+        <div className="text-center py-16 text-slate-400">
+          <div className="text-4xl mb-3">📭</div>
+          <p className="font-semibold text-slate-600">Nothing here yet</p>
+          <p className="text-sm mt-1">Add some transactions to see the magic</p>
         </div>
       )}
 
@@ -113,44 +103,43 @@ export default function Transactions() {
           const hasLineItems = tx.lineItems && tx.lineItems.length > 0
           const expanded = expandedTx === tx.id
           return (
-            <div key={tx.id} className="bg-white border border-gray-100 rounded-xl p-3.5">
+            <div key={tx.id} className="card-hover">
               <div className="flex items-center justify-between">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                      tx.type === 'income' ? 'bg-green-50 text-green-700' :
-                      tx.type === 'expense' ? 'bg-red-50 text-red-600' : 'bg-gray-100 text-gray-600'
+                    <span className={`text-[10px] px-2 py-0.5 rounded-lg font-semibold uppercase tracking-wider ${
+                      tx.type === 'income' ? 'bg-emerald-50 text-emerald-700' :
+                      tx.type === 'expense' ? 'bg-rose-50 text-rose-600' : 'bg-slate-100 text-slate-600'
                     }`}>{tx.type}</span>
-                    {tx.scanned && <span className="text-xs text-blue-500">· scanned</span>}
+                    {tx.scanned && <span className="text-[10px] text-violet-500 font-medium">scanned</span>}
                     {hasLineItems && (
-                      <button onClick={() => setExpandedTx(expanded ? null : tx.id)} className="text-xs text-purple-500 flex items-center gap-0.5">
-                        {tx.lineItems.length} items {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                      <button onClick={() => setExpandedTx(expanded ? null : tx.id)} className="text-[10px] text-indigo-500 flex items-center gap-0.5 font-medium">
+                        {tx.lineItems.length} items {expanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
                       </button>
                     )}
                   </div>
-                  <p className="text-sm font-semibold text-gray-800 mt-0.5 truncate">{tx.description || tx.merchant || tx.category}</p>
-                  <p className="text-xs text-gray-400">{formatDate(tx.date)} · {tx.category}{account ? ` · ${account.name}` : ''}</p>
+                  <p className="text-sm font-semibold text-slate-800 mt-1 truncate">{tx.description || tx.merchant || tx.category}</p>
+                  <p className="text-[11px] text-slate-400">{formatDate(tx.date)} · {tx.category}{account ? ` · ${account.name}` : ''}</p>
                 </div>
                 <div className="flex items-center gap-2 ml-2">
-                  <p className={`text-sm font-bold whitespace-nowrap ${tx.type === 'income' ? 'text-green-600' : tx.type === 'expense' ? 'text-red-500' : 'text-gray-700'}`}>
+                  <p className={`text-sm font-bold whitespace-nowrap ${tx.type === 'income' ? 'text-emerald-600' : tx.type === 'expense' ? 'text-rose-500' : 'text-slate-700'}`}>
                     {tx.type === 'income' ? '+' : tx.type === 'expense' ? '-' : ''}{formatCurrency(tx.amount, cur)}
                   </p>
                   <div className="flex gap-0.5">
-                    <button onClick={() => openEdit(tx)} className="p-1.5 text-gray-400 hover:text-blue-600 rounded-lg"><Pencil size={13} /></button>
-                    <button onClick={() => setDeleteId(tx.id)} className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg"><Trash2 size={13} /></button>
+                    <button onClick={() => openEdit(tx)} className="p-1.5 text-slate-400 hover:text-violet-600 rounded-lg"><Pencil size={13} /></button>
+                    <button onClick={() => setDeleteId(tx.id)} className="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg"><Trash2 size={13} /></button>
                   </div>
                 </div>
               </div>
-
               {expanded && hasLineItems && (
-                <div className="mt-2 pt-2 border-t border-gray-50 space-y-1">
+                <div className="mt-2 pt-2 border-t border-slate-100 space-y-1.5">
                   {tx.lineItems.map((li, i) => (
                     <div key={li.id || i} className="flex items-center justify-between text-xs">
                       <div className="flex items-center gap-2">
-                        <span className="text-gray-600">{li.description}</span>
-                        <span className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">{li.category}</span>
+                        <span className="text-slate-600">{li.description}</span>
+                        <span className="px-1.5 py-0.5 rounded-lg bg-slate-100 text-slate-500 text-[10px] font-medium">{li.category}</span>
                       </div>
-                      <span className="text-gray-700 font-medium">{formatCurrency(li.amount, cur)}{li.quantity > 1 ? ` x${li.quantity}` : ''}</span>
+                      <span className="text-slate-700 font-semibold">{formatCurrency(li.amount, cur)}{li.quantity > 1 ? ` x${li.quantity}` : ''}</span>
                     </div>
                   ))}
                 </div>
@@ -164,7 +153,7 @@ export default function Transactions() {
         <Modal title={editing ? 'Edit Transaction' : 'Add Transaction'} onClose={() => setShowForm(false)}>
           <div className="flex gap-2 mb-4">
             {(['expense', 'income', 'transfer'] as TransactionType[]).map(t => (
-              <button key={t} onClick={() => setForm(f => ({ ...f, type: t }))} className={`flex-1 py-2 rounded-lg text-xs font-semibold capitalize border ${form.type === t ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-200 text-gray-500'}`}>{t}</button>
+              <button key={t} onClick={() => setForm(f => ({ ...f, type: t }))} className={`flex-1 py-2.5 rounded-xl text-xs font-semibold capitalize border transition-colors ${form.type === t ? 'bg-violet-600 text-white border-violet-600' : 'border-slate-200 text-slate-500'}`}>{t}</button>
             ))}
           </div>
           <FormField label="Amount">
@@ -202,14 +191,13 @@ export default function Transactions() {
 
       {deleteId && (
         <Modal title="Delete Transaction?" onClose={() => setDeleteId(null)}>
-          <p className="text-sm text-gray-500 mb-4">This action cannot be undone.</p>
+          <p className="text-sm text-slate-500 mb-4">This can't be undone. Poof, gone forever.</p>
           <div className="flex gap-2">
-            <button onClick={() => setDeleteId(null)} className="flex-1 btn-secondary">Cancel</button>
-            <button onClick={handleDelete} className="flex-1 bg-red-500 text-white rounded-xl py-2.5 text-sm font-medium">Delete</button>
+            <button onClick={() => setDeleteId(null)} className="flex-1 btn-secondary">Keep it</button>
+            <button onClick={handleDelete} className="flex-1 bg-rose-500 text-white rounded-2xl py-3 text-sm font-semibold">Delete</button>
           </div>
         </Modal>
       )}
-
       <div className="h-4" />
     </div>
   )

@@ -1,32 +1,24 @@
 import { useState } from 'react'
-import { Plus, Pencil, Trash2, Landmark, Wallet, CreditCard, BadgeDollarSign, TrendingUp, X, Check, LucideIcon } from 'lucide-react'
+import { Plus, Pencil, Trash2, Landmark, Wallet, CreditCard, BadgeDollarSign, TrendingUp, X, LucideIcon } from 'lucide-react'
 import { useStore } from '../store'
 import { Account, AccountType } from '../types'
-import { formatCurrency, todayISO } from '../utils/helpers'
+import { formatCurrency } from '../utils/helpers'
 import { api } from '../utils/api'
 
 const TYPE_LABELS: Record<AccountType, string> = {
-  bank: 'Bank Account',
-  cash: 'Cash',
-  credit_card: 'Credit Card',
-  loan: 'Loan',
-  income: 'Income Source',
+  bank: 'Bank Account', cash: 'Cash', credit_card: 'Credit Card', loan: 'Loan', income: 'Income Source',
 }
 
 const TYPE_ICONS: Record<AccountType, LucideIcon> = {
-  bank: Landmark,
-  cash: Wallet,
-  credit_card: CreditCard,
-  loan: BadgeDollarSign,
-  income: TrendingUp,
+  bank: Landmark, cash: Wallet, credit_card: CreditCard, loan: BadgeDollarSign, income: TrendingUp,
 }
 
-const TYPE_COLORS: Record<AccountType, string> = {
-  bank: 'bg-blue-50 text-blue-600',
-  cash: 'bg-green-50 text-green-600',
-  credit_card: 'bg-purple-50 text-purple-600',
-  loan: 'bg-red-50 text-red-600',
-  income: 'bg-emerald-50 text-emerald-600',
+const TYPE_GRADIENTS: Record<AccountType, string> = {
+  bank: 'from-blue-500 to-indigo-600',
+  cash: 'from-emerald-500 to-green-600',
+  credit_card: 'from-violet-500 to-purple-600',
+  loan: 'from-rose-500 to-pink-600',
+  income: 'from-teal-500 to-emerald-600',
 }
 
 const emptyForm = {
@@ -63,11 +55,8 @@ export default function Accounts() {
 
   async function save() {
     const payload: any = {
-      name: form.name.trim(),
-      type: form.type,
-      balance: parseFloat(form.balance) || 0,
-      currency: form.currency,
-      notes: form.notes || null,
+      name: form.name.trim(), type: form.type, balance: parseFloat(form.balance) || 0,
+      currency: form.currency, notes: form.notes || null,
     }
     if (form.type === 'loan') {
       payload.interestRate = form.interestRate ? parseFloat(form.interestRate) : null
@@ -79,11 +68,8 @@ export default function Accounts() {
       payload.statementDueDay = form.statementDueDay ? parseInt(form.statementDueDay) : null
     }
     if (!payload.name) return
-    if (editing) {
-      await api.updateAccount(editing.id, payload)
-    } else {
-      await api.createAccount(payload)
-    }
+    if (editing) await api.updateAccount(editing.id, payload)
+    else await api.createAccount(payload)
     await refreshAccounts()
     setShowForm(false)
   }
@@ -102,17 +88,20 @@ export default function Accounts() {
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between pt-2">
-        <h1 className="text-xl font-bold text-gray-900">Accounts</h1>
-        <button onClick={openAdd} className="flex items-center gap-1.5 bg-blue-600 text-white rounded-lg px-3 py-1.5 text-sm font-medium">
+        <div>
+          <h1 className="text-xl font-extrabold text-slate-900">Accounts</h1>
+          <p className="text-xs text-slate-400">Your money lives here</p>
+        </div>
+        <button onClick={openAdd} className="flex items-center gap-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl px-3.5 py-2 text-sm font-semibold shadow-sm">
           <Plus size={16} /> Add
         </button>
       </div>
 
       {data.accounts.length === 0 && (
-        <div className="text-center py-16 text-gray-400">
-          <Landmark size={40} className="mx-auto mb-3 opacity-40" />
-          <p className="font-medium">No accounts yet</p>
-          <p className="text-sm mt-1">Add bank accounts, credit cards, loans, and income sources</p>
+        <div className="text-center py-16 text-slate-400">
+          <div className="text-4xl mb-3">🏦</div>
+          <p className="font-semibold text-slate-600">No accounts yet</p>
+          <p className="text-sm mt-1">Add bank accounts, cards, loans & more</p>
         </div>
       )}
 
@@ -125,44 +114,45 @@ export default function Accounts() {
         return (
           <div key={type}>
             <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{TYPE_LABELS[type]}</p>
-              <p className={`text-xs font-semibold ${isDebt ? 'text-red-500' : 'text-green-600'}`}>{formatCurrency(total, cur)}</p>
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{TYPE_LABELS[type]}</p>
+              <p className={`text-xs font-bold ${isDebt ? 'text-rose-500' : 'text-emerald-600'}`}>{formatCurrency(total, cur)}</p>
             </div>
             <div className="space-y-2">
               {list.map(a => {
                 const utilization = a.type === 'credit_card' && a.creditLimit ? ((a.balance / a.creditLimit) * 100).toFixed(1) : null
                 return (
-                  <div key={a.id} className="bg-white border border-gray-100 rounded-xl p-3.5">
+                  <div key={a.id} className="card-hover">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className={`w-9 h-9 rounded-full flex items-center justify-center ${TYPE_COLORS[type]}`}>
-                          <Icon size={18} />
+                        <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${TYPE_GRADIENTS[type]} flex items-center justify-center text-white`}>
+                          <Icon size={16} />
                         </div>
                         <div>
-                          <p className="text-sm font-semibold text-gray-800">{a.name}</p>
-                          {a.notes && <p className="text-xs text-gray-400 truncate max-w-[160px]">{a.notes}</p>}
+                          <p className="text-sm font-semibold text-slate-800">{a.name}</p>
+                          {a.notes && <p className="text-[11px] text-slate-400 truncate max-w-[140px]">{a.notes}</p>}
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <p className={`text-sm font-bold ${isDebt ? 'text-red-500' : 'text-gray-900'}`}>{formatCurrency(a.balance, a.currency)}</p>
-                        <div className="flex gap-1">
-                          <button onClick={() => openEdit(a)} className="p-1.5 text-gray-400 hover:text-blue-600 rounded-lg"><Pencil size={14} /></button>
-                          <button onClick={() => setDeleteId(a.id)} className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg"><Trash2 size={14} /></button>
+                      <div className="flex items-center gap-2">
+                        <p className={`text-sm font-bold ${isDebt ? 'text-rose-500' : 'text-slate-800'}`}>{formatCurrency(a.balance, a.currency)}</p>
+                        <div className="flex gap-0.5">
+                          <button onClick={() => openEdit(a)} className="p-1.5 text-slate-400 hover:text-violet-600 rounded-lg"><Pencil size={13} /></button>
+                          <button onClick={() => setDeleteId(a.id)} className="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg"><Trash2 size={13} /></button>
                         </div>
                       </div>
                     </div>
-                    {/* Extra details for loans and credit cards */}
                     {a.type === 'loan' && (a.interestRate != null || a.maturityDate) && (
-                      <div className="mt-2 flex gap-3 text-xs text-gray-500">
+                      <div className="mt-2 flex gap-3 text-[11px] text-slate-500">
                         {a.interestRate != null && <span>Rate: {a.interestRate}%/mo</span>}
                         {a.maturityDate && <span>Maturity: {a.maturityDate}</span>}
-                        {a.originalAmount != null && <span>Payoff: {((1 - a.balance / a.originalAmount) * 100).toFixed(0)}%</span>}
+                        {a.originalAmount != null && (
+                          <span className="text-emerald-600 font-medium">{((1 - a.balance / a.originalAmount) * 100).toFixed(0)}% paid off</span>
+                        )}
                       </div>
                     )}
                     {a.type === 'credit_card' && (
-                      <div className="mt-2 flex gap-3 text-xs text-gray-500">
+                      <div className="mt-2 flex gap-3 text-[11px] text-slate-500">
                         {a.creditLimit != null && <span>Limit: {formatCurrency(a.creditLimit, cur)}</span>}
-                        {utilization && <span className={parseFloat(utilization) > 70 ? 'text-red-500 font-medium' : ''}>Util: {utilization}%</span>}
+                        {utilization && <span className={parseFloat(utilization) > 70 ? 'text-rose-500 font-medium' : ''}>Util: {utilization}%</span>}
                         {a.statementDueDay && <span>Due: Day {a.statementDueDay}</span>}
                       </div>
                     )}
@@ -187,7 +177,6 @@ export default function Accounts() {
           <FormField label="Current Balance">
             <input className="input" type="number" step="0.01" placeholder="0.00" value={form.balance} onChange={e => setForm(f => ({ ...f, balance: e.target.value }))} />
           </FormField>
-
           {form.type === 'loan' && (
             <>
               <FormField label="Monthly Interest Rate (%)">
@@ -201,7 +190,6 @@ export default function Accounts() {
               </FormField>
             </>
           )}
-
           {form.type === 'credit_card' && (
             <>
               <FormField label="Credit Limit">
@@ -212,7 +200,6 @@ export default function Accounts() {
               </FormField>
             </>
           )}
-
           <FormField label="Notes (optional)">
             <input className="input" placeholder="Any notes" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
           </FormField>
@@ -225,10 +212,10 @@ export default function Accounts() {
 
       {deleteId && (
         <Modal title="Delete Account?" onClose={() => setDeleteId(null)}>
-          <p className="text-sm text-gray-500 mb-4">This will also delete all transactions for this account.</p>
+          <p className="text-sm text-slate-500 mb-4">This will also delete all transactions for this account.</p>
           <div className="flex gap-2">
             <button onClick={() => setDeleteId(null)} className="flex-1 btn-secondary">Cancel</button>
-            <button onClick={handleDelete} className="flex-1 bg-red-500 text-white rounded-xl py-2.5 text-sm font-medium">Delete</button>
+            <button onClick={handleDelete} className="flex-1 bg-rose-500 text-white rounded-2xl py-3 text-sm font-semibold">Delete</button>
           </div>
         </Modal>
       )}
@@ -238,11 +225,11 @@ export default function Accounts() {
 
 export function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={onClose}>
-      <div className="bg-white rounded-t-2xl w-full max-w-lg p-5 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white rounded-t-3xl w-full max-w-lg p-5 max-h-[90vh] overflow-y-auto shadow-xl" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-bold text-gray-900">{title}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+          <h2 className="text-base font-bold text-slate-900">{title}</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors"><X size={20} /></button>
         </div>
         {children}
       </div>
@@ -253,7 +240,7 @@ export function Modal({ title, onClose, children }: { title: string; onClose: ()
 export function FormField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="mb-3">
-      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+      <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">{label}</label>
       {children}
     </div>
   )

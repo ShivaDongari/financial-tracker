@@ -63,29 +63,33 @@ export default function Bills() {
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between pt-2">
-        <h1 className="text-xl font-bold text-gray-900">Bills</h1>
-        <button onClick={openAdd} className="flex items-center gap-1.5 bg-blue-600 text-white rounded-lg px-3 py-1.5 text-sm font-medium">
+        <div>
+          <h1 className="text-xl font-extrabold text-slate-900">Bills</h1>
+          <p className="text-xs text-slate-400">{upcoming.length} upcoming · {paid.length} paid</p>
+        </div>
+        <button onClick={openAdd} className="flex items-center gap-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl px-3.5 py-2 text-sm font-semibold shadow-sm">
           <Plus size={16} /> Add
         </button>
       </div>
 
       {data.bills.length === 0 && (
-        <div className="text-center py-16 text-gray-400">
-          <CalendarClock size={40} className="mx-auto mb-3 opacity-40" />
-          <p className="font-medium">No bills yet</p>
+        <div className="text-center py-16 text-slate-400">
+          <div className="text-4xl mb-3">🧾</div>
+          <p className="font-semibold text-slate-600">No bills yet</p>
+          <p className="text-sm mt-1">Add recurring bills to never miss a due date</p>
         </div>
       )}
 
       {upcoming.length > 0 && (
         <div className="space-y-2">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Upcoming</p>
+          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Upcoming</p>
           {upcoming.map(b => <BillRow key={b.id} bill={b} cur={cur} onEdit={openEdit} onDelete={setDeleteId} onToggle={togglePaid} />)}
         </div>
       )}
 
       {paid.length > 0 && (
         <div className="space-y-2">
-          <button onClick={() => setShowPaid(!showPaid)} className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+          <button onClick={() => setShowPaid(!showPaid)} className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
             Paid ({paid.length}) {showPaid ? '▲' : '▼'}
           </button>
           {showPaid && paid.map(b => <BillRow key={b.id} bill={b} cur={cur} onEdit={openEdit} onDelete={setDeleteId} onToggle={togglePaid} />)}
@@ -124,7 +128,7 @@ export default function Bills() {
           </FormField>
           <div className="flex items-center gap-2 mb-4">
             <input type="checkbox" id="paid" checked={form.paid} onChange={e => setForm(f => ({ ...f, paid: e.target.checked }))} className="rounded" />
-            <label htmlFor="paid" className="text-sm text-gray-600">Mark as paid</label>
+            <label htmlFor="paid" className="text-sm text-slate-600">Mark as paid</label>
           </div>
           <div className="flex gap-2">
             <button onClick={() => setShowForm(false)} className="flex-1 btn-secondary">Cancel</button>
@@ -137,7 +141,7 @@ export default function Bills() {
         <Modal title="Delete Bill?" onClose={() => setDeleteId(null)}>
           <div className="flex gap-2 mt-4">
             <button onClick={() => setDeleteId(null)} className="flex-1 btn-secondary">Cancel</button>
-            <button onClick={handleDelete} className="flex-1 bg-red-500 text-white rounded-xl py-2.5 text-sm font-medium">Delete</button>
+            <button onClick={handleDelete} className="flex-1 bg-rose-500 text-white rounded-2xl py-3 text-sm font-semibold">Delete</button>
           </div>
         </Modal>
       )}
@@ -151,22 +155,22 @@ function BillRow({ bill, cur, onEdit, onDelete, onToggle }: { bill: Bill; cur: s
   const overdue = days < 0
   const urgent = days >= 0 && days <= 3
   return (
-    <div className={`bg-white border rounded-xl p-3.5 flex items-center justify-between ${overdue ? 'border-red-200' : 'border-gray-100'}`}>
+    <div className={`card-hover flex items-center justify-between ${overdue ? '!border-rose-200' : ''}`}>
       <div className="flex items-center gap-3">
-        <button onClick={() => onToggle(bill)} className={`w-7 h-7 rounded-full border-2 flex items-center justify-center ${bill.paid ? 'bg-green-500 border-green-500' : overdue ? 'border-red-400' : urgent ? 'border-orange-400' : 'border-gray-300'}`}>
+        <button onClick={() => onToggle(bill)} className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all ${bill.paid ? 'bg-emerald-500 border-emerald-500' : overdue ? 'border-rose-400' : urgent ? 'border-amber-400' : 'border-slate-300'}`}>
           {bill.paid && <Check size={14} className="text-white" />}
         </button>
         <div>
-          <p className={`text-sm font-semibold ${bill.paid ? 'text-gray-400 line-through' : 'text-gray-800'}`}>{bill.name}</p>
-          <p className={`text-xs ${overdue ? 'text-red-500 font-medium' : urgent ? 'text-orange-500' : 'text-gray-400'}`}>
-            {bill.paid ? 'Paid' : overdue ? `${Math.abs(days)}d overdue` : days === 0 ? 'Due today' : `Due in ${days}d`} · {formatDate(bill.dueDate)}
+          <p className={`text-sm font-semibold ${bill.paid ? 'text-slate-400 line-through' : 'text-slate-800'}`}>{bill.name}</p>
+          <p className={`text-[11px] ${overdue ? 'text-rose-500 font-medium' : urgent ? 'text-amber-500' : 'text-slate-400'}`}>
+            {bill.paid ? 'Paid' : overdue ? `${Math.abs(days)}d overdue` : days === 0 ? 'Due today!' : `Due in ${days}d`} · {formatDate(bill.dueDate)}
           </p>
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <p className="text-sm font-bold text-gray-800">{formatCurrency(bill.amount, cur)}</p>
-        <button onClick={() => onEdit(bill)} className="p-1.5 text-gray-400 hover:text-blue-600 rounded-lg"><Pencil size={13} /></button>
-        <button onClick={() => onDelete(bill.id)} className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg"><Trash2 size={13} /></button>
+        <p className="text-sm font-bold text-slate-800">{formatCurrency(bill.amount, cur)}</p>
+        <button onClick={() => onEdit(bill)} className="p-1.5 text-slate-400 hover:text-violet-600 rounded-lg"><Pencil size={13} /></button>
+        <button onClick={() => onDelete(bill.id)} className="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg"><Trash2 size={13} /></button>
       </div>
     </div>
   )
