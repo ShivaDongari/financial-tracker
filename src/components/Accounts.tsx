@@ -34,7 +34,7 @@ export default function Accounts() {
 
   async function save() {
     const payload: any = { name: form.name.trim(), type: form.type, balance: parseFloat(form.balance) || 0, currency: form.currency, notes: form.notes || null }
-    if (form.type === 'loan') { payload.interestRate = form.interestRate ? parseFloat(form.interestRate) : null; payload.maturityDate = form.maturityDate || null; payload.originalAmount = form.originalAmount ? parseFloat(form.originalAmount) : null }
+    if (form.type === 'loan') { payload.interestRate = form.interestRate ? parseFloat(form.interestRate) : null; payload.maturityDate = form.maturityDate || null; payload.originalAmount = form.originalAmount ? parseFloat(form.originalAmount) : null; payload.monthlyPayment = (form as any).monthlyPayment ? parseFloat((form as any).monthlyPayment) : null }
     if (form.type === 'credit_card') { payload.creditLimit = form.creditLimit ? parseFloat(form.creditLimit) : null; payload.statementDueDay = form.statementDueDay ? parseInt(form.statementDueDay) : null }
     if (!payload.name) return
     if (editing) await api.updateAccount(editing.id, payload); else await api.createAccount(payload)
@@ -145,6 +145,7 @@ export default function Accounts() {
               <FormField label="Interest Rate (%/mo)"><input className="input" type="number" step="0.01" value={form.interestRate} onChange={e => setForm(f => ({ ...f, interestRate: e.target.value }))} /></FormField>
               <FormField label="Original Amount"><input className="input" type="number" step="0.01" value={form.originalAmount} onChange={e => setForm(f => ({ ...f, originalAmount: e.target.value }))} /></FormField>
             </div>
+            <FormField label="Monthly Payment"><input className="input" type="number" step="0.01" placeholder="350" value={(form as any).monthlyPayment || ''} onChange={e => setForm(f => ({ ...f, monthlyPayment: e.target.value } as any))} /></FormField>
             <FormField label="Maturity Date"><input className="input" type="date" value={form.maturityDate} onChange={e => setForm(f => ({ ...f, maturityDate: e.target.value }))} /></FormField>
           </>)}
           {form.type === 'credit_card' && (

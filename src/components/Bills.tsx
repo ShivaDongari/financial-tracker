@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react'
-import { Plus, Pencil, Trash2, Check, CreditCard, TrendingUp, Search } from 'lucide-react'
+import { Plus, Pencil, Trash2, Check, CreditCard, TrendingUp, Search, Undo2 } from 'lucide-react'
 import { useStore } from '../store'
-import { Bill, BillFrequency, BillType, CATEGORIES, Category } from '../types'
+import { Bill, BillFrequency, BillType, CATEGORIES } from '../types'
+import CategoryPicker from './CategoryPicker'
 import { formatCurrency, formatDate, daysUntil, todayISO } from '../utils/helpers'
 import { api } from '../utils/api'
 import { Modal, FormField } from './Accounts'
@@ -12,7 +13,7 @@ const FREQ_LABELS: Record<BillFrequency, string> = {
 
 const emptyForm = {
   name: '', amount: '', dueDate: todayISO(), noDueDate: false, frequency: 'monthly' as BillFrequency,
-  billType: 'fixed' as BillType, accountId: '', category: 'Household' as Category, paid: false, notes: '',
+  billType: 'fixed' as BillType, accountId: '', category: 'Household' as string, paid: false, notes: '',
 }
 
 export default function Bills() {
@@ -86,6 +87,11 @@ export default function Bills() {
     await api.payBill(payBill.id, payAccountId)
     await Promise.all([refreshBills(), refreshTransactions(), refreshAccounts()])
     setPayBill(null); setPayAccountId('')
+  }
+
+  async function handleUnpay(b: Bill) {
+    await api.unpayBill(b.id)
+    await Promise.all([refreshBills(), refreshTransactions(), refreshAccounts()])
   }
 
   async function handleDelete() {
@@ -200,6 +206,7 @@ export default function Bills() {
                     <td className="table-cell">
                       <div className="flex gap-0.5 justify-end">
                         {!b.paid && <button onClick={() => { setPayBill(b); setPayAccountId(b.accountId || data.accounts[0]?.id || '') }} className="p-1 t-muted hover:text-[var(--success)]" title="Pay"><CreditCard size={13} /></button>}
+                        {b.paid && <button onClick={() => handleUnpay(b)} className="p-1 t-muted hover:text-[var(--warning)]" title="Revert payment"><Undo2 size={13} /></button>}
                         <button onClick={() => openEdit(b)} className="p-1 t-muted hover:t-accent"><Pencil size={13} /></button>
                         <button onClick={() => setDeleteId(b.id)} className="p-1 t-muted hover:text-[var(--danger)]"><Trash2 size={13} /></button>
                       </div>
@@ -265,9 +272,9 @@ export default function Bills() {
             </>
           )}
           <FormField label="Category">
-            <select className="input" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value as Category }))}>
-              {CATEGORIES.map(c => <option key={c}>{c}</option>)}
-            </select>
+            <CategoryPicker category={form.category} subcategory={(form as any).subcategory || ''}
+              onCategoryChange={c => setForm(f => ({ ...f, category: c }))}
+              onSubcategoryChange={s => setForm(f => ({ ...f, subcategory: s } as any))} />
           </FormField>
           <FormField label="Pay from (optional)">
             <select className="input" value={form.accountId} onChange={e => setForm(f => ({ ...f, accountId: e.target.value }))}>

@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { ScanLine, Upload, Camera, Loader2, CheckCircle, AlertCircle, Edit3, Plus, Trash2, Sparkles } from 'lucide-react'
 import { useStore } from '../store'
-import { Category, CATEGORIES, TransactionType, TransactionLineItem } from '../types'
+import { CATEGORIES, TransactionType, TransactionLineItem } from '../types'
 import { todayISO, formatCurrency } from '../utils/helpers'
 import { scanReceipt, OcrResult } from '../utils/ocr'
 import { api } from '../utils/api'
@@ -17,7 +17,7 @@ export default function Scanner({ onSaved }: Props) {
   const [ocrResult, setOcrResult] = useState<OcrResult | null>(null)
   const [form, setForm] = useState({
     type: 'expense' as TransactionType, amount: '', description: '',
-    category: 'Household' as Category, date: todayISO(), merchant: '',
+    category: 'Household' as string, date: todayISO(), merchant: '',
     accountId: '', notes: '',
   })
   const [lineItems, setLineItems] = useState<TransactionLineItem[]>([])
@@ -163,7 +163,7 @@ export default function Scanner({ onSaved }: Props) {
               <input className="input" value={form.merchant} onChange={e => setForm(f => ({ ...f, merchant: e.target.value }))} />
             </FormField>
             <FormField label="Suggested Category">
-              <select className="input" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value as Category }))}>
+              <select className="input" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value as string }))}>
                 {CATEGORIES.map(c => <option key={c}>{c}</option>)}
               </select>
             </FormField>
@@ -204,7 +204,7 @@ export default function Scanner({ onSaved }: Props) {
                     <input className="input !py-2 text-xs w-20" type="number" step="0.01" placeholder="$" value={li.amount || ''}
                       onChange={e => updateLineItem(i, { amount: parseFloat(e.target.value) || 0 })} />
                     <select className="input !py-2 text-xs flex-1" value={li.category}
-                      onChange={e => updateLineItem(i, { category: e.target.value as Category })}>
+                      onChange={e => updateLineItem(i, { category: e.target.value as string })}>
                       {CATEGORIES.map(c => <option key={c}>{c}</option>)}
                     </select>
                     <input className="input !py-2 text-xs w-14" type="number" min="1" placeholder="Qty" value={li.quantity}

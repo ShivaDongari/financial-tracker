@@ -12,28 +12,44 @@ export interface Account {
   originalAmount?: number | null
   creditLimit?: number | null
   statementDueDay?: number | null
+  monthlyPayment?: number | null
   createdAt: string
 }
 
 export type TransactionType = 'income' | 'expense' | 'transfer'
 
-export const CATEGORIES = [
-  'Household',
-  'Car',
-  'Personal',
-  'Entertainment',
-  'Education',
-  'Loans / Debt Service',
-  'Subscription',
-] as const
+export interface CategoryDef {
+  name: string
+  subcategories: string[]
+}
 
-export type Category = typeof CATEGORIES[number]
+export const CATEGORY_TREE: CategoryDef[] = [
+  { name: 'Income', subcategories: ['Salary', 'Bonus', 'Freelance', 'Investments', 'Other Income'] },
+  { name: 'Housing', subcategories: ['Rent', 'Mortgage', 'Property Tax', 'Maintenance'] },
+  { name: 'Utilities', subcategories: ['Electricity', 'Gas', 'Water', 'Internet', 'Phone'] },
+  { name: 'Transportation', subcategories: ['Fuel', 'Parking', 'Public Transit', 'Vehicle Maintenance', 'Insurance'] },
+  { name: 'Food & Dining', subcategories: ['Groceries', 'Restaurants', 'Coffee Shops', 'Delivery'] },
+  { name: 'Subscriptions', subcategories: ['Streaming Services', 'Software', 'Cloud Storage', 'Memberships'] },
+  { name: 'Debt Payments', subcategories: ['Credit Cards', 'Student Loans', 'Personal Loans', 'Auto Loans'] },
+  { name: 'Healthcare', subcategories: ['Insurance', 'Pharmacy', 'Medical Bills', 'Dental'] },
+  { name: 'Entertainment', subcategories: ['Movies', 'Events', 'Gaming', 'Hobbies'] },
+  { name: 'Education', subcategories: ['Tuition', 'Textbooks', 'Courses', 'Software'] },
+  { name: 'Personal', subcategories: ['Apparel', 'Grooming', 'Fitness', 'Gifts'] },
+  { name: 'Other', subcategories: ['Miscellaneous'] },
+]
+
+export const CATEGORIES = CATEGORY_TREE.map(c => c.name)
+
+export function getSubcategories(category: string): string[] {
+  return CATEGORY_TREE.find(c => c.name === category)?.subcategories || []
+}
 
 export interface TransactionLineItem {
   id?: string
   description: string
   amount: number
-  category: Category
+  category: string
+  subcategory?: string
   quantity: number
   unitPrice?: number
   tax?: number
@@ -44,13 +60,15 @@ export interface Transaction {
   id: string
   type: TransactionType
   amount: number
-  category: Category
+  category: string
+  subcategory?: string
   description: string
   accountId: string
   date: string
   merchant?: string
   notes?: string
   scanned?: boolean
+  billId?: string
   lineItems: TransactionLineItem[]
   createdAt: string
 }
@@ -67,9 +85,12 @@ export interface Bill {
   frequency: BillFrequency
   billType: BillType
   accountId?: string
-  category: Category
+  category: string
+  subcategory?: string
   paid: boolean
   paidDate?: string
+  paidTransactionId?: string
+  subscriptionId?: string
   notes?: string
   createdAt: string
 }
@@ -80,10 +101,12 @@ export interface Subscription {
   amount: number
   frequency: 'monthly' | 'quarterly' | 'yearly'
   nextRenewal: string
-  category: Category
+  category: string
+  subcategory?: string
   accountId?: string
   active: boolean
   notes?: string
+  linkedBillId?: string
   createdAt: string
 }
 
@@ -91,7 +114,8 @@ export interface AppSettings {
   currency: string
   name: string
   darkMode?: boolean
-  selectedMonth?: string // YYYY-MM format
+  selectedMonth?: string
+  customCategories?: CategoryDef[]
 }
 
 export interface DashboardData {
@@ -107,4 +131,12 @@ export interface DashboardData {
   dueSoonCount: number
   overdueCount: number
   paidCount: number
+  totalDueThisMonth: number
+  debtSummary: {
+    totalOutstanding: number
+    dueThisMonth: number
+    billsDue: number
+    subscriptionsDue: number
+    loanPaymentsDue: number
+  }
 }

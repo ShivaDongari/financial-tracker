@@ -75,6 +75,35 @@ export default function Dashboard({ onNavigate }: Props) {
         </div>
       )}
 
+      {/* Debt & Monthly Obligations */}
+      {db && (db.debtSummary.totalOutstanding > 0 || db.totalDueThisMonth > 0) && (
+        <div className="card">
+          <h2 className="text-xs font-semibold t-secondary uppercase tracking-wider mb-3">Monthly Obligations</h2>
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+            <div className="rounded-lg p-3" style={{ background: 'var(--danger-light)' }}>
+              <p className="text-[10px] font-medium t-muted">Total Debt</p>
+              <p className="text-sm font-bold text-[var(--danger)]">{formatCurrency(db.debtSummary.totalOutstanding, cur)}</p>
+            </div>
+            <div className="rounded-lg p-3" style={{ background: 'var(--warning-light)' }}>
+              <p className="text-[10px] font-medium t-muted">Due This Month</p>
+              <p className="text-sm font-bold text-[var(--warning)]">{formatCurrency(db.debtSummary.dueThisMonth, cur)}</p>
+            </div>
+            <div className="rounded-lg p-3" style={{ background: 'var(--bg-accent)' }}>
+              <p className="text-[10px] font-medium t-muted">Bills</p>
+              <p className="text-sm font-bold t-accent">{formatCurrency(db.debtSummary.billsDue, cur)}</p>
+            </div>
+            <div className="rounded-lg p-3" style={{ background: 'var(--bg-accent)' }}>
+              <p className="text-[10px] font-medium t-muted">Subscriptions</p>
+              <p className="text-sm font-bold t-accent">{formatCurrency(db.debtSummary.subscriptionsDue, cur)}</p>
+            </div>
+            <div className="rounded-lg p-3" style={{ background: 'var(--bg-accent)' }}>
+              <p className="text-[10px] font-medium t-muted">Loan Payments</p>
+              <p className="text-sm font-bold t-accent">{formatCurrency(db.debtSummary.loanPaymentsDue, cur)}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Two-col desktop */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
         {/* Left — 3 cols */}

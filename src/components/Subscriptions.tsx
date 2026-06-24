@@ -1,14 +1,15 @@
 import { useState } from 'react'
 import { Plus, Pencil, Trash2, RefreshCw } from 'lucide-react'
 import { useStore } from '../store'
-import { Subscription, CATEGORIES, Category } from '../types'
+import { Subscription, CATEGORIES } from '../types'
+import CategoryPicker from './CategoryPicker'
 import { formatCurrency, formatDate, daysUntil, todayISO } from '../utils/helpers'
 import { api } from '../utils/api'
 import { Modal, FormField } from './Accounts'
 
 const emptyForm = {
   name: '', amount: '', frequency: 'monthly' as 'monthly' | 'quarterly' | 'yearly',
-  nextRenewal: todayISO(), category: 'Subscription' as Category, accountId: '', active: true, notes: '',
+  nextRenewal: todayISO(), category: 'Subscriptions', subcategory: '', accountId: '', active: true, notes: '',
 }
 
 export default function Subscriptions() {
@@ -31,15 +32,15 @@ export default function Subscriptions() {
   function openAdd() { setEditing(null); setForm(emptyForm); setShowForm(true) }
   function openEdit(s: Subscription) {
     setEditing(s)
-    setForm({ name: s.name, amount: String(s.amount), frequency: s.frequency, nextRenewal: s.nextRenewal, category: s.category, accountId: s.accountId || '', active: s.active, notes: s.notes || '' })
+    setForm({ name: s.name, amount: String(s.amount), frequency: s.frequency, nextRenewal: s.nextRenewal, category: s.category, subcategory: s.subcategory || '', accountId: s.accountId || '', active: s.active, notes: s.notes || '' })
     setShowForm(true)
   }
 
   async function save() {
     const payload = {
       name: form.name.trim(), amount: parseFloat(form.amount) || 0, frequency: form.frequency,
-      nextRenewal: form.nextRenewal, category: form.category, accountId: form.accountId || undefined,
-      active: form.active, notes: form.notes.trim(),
+      nextRenewal: form.nextRenewal, category: form.category, subcategory: form.subcategory || undefined,
+      accountId: form.accountId || undefined, active: form.active, notes: form.notes.trim(),
     }
     if (!payload.name) return
     if (editing) await api.updateSubscription(editing.id, payload)
@@ -154,7 +155,9 @@ export default function Subscriptions() {
           <div className="grid grid-cols-2 gap-3">
             <FormField label="Next Renewal"><input className="input" type="date" value={form.nextRenewal} onChange={e => setForm(f => ({ ...f, nextRenewal: e.target.value }))} /></FormField>
             <FormField label="Category">
-              <select className="input" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value as Category }))}>{CATEGORIES.map(c => <option key={c}>{c}</option>)}</select>
+              <CategoryPicker category={form.category} subcategory={form.subcategory}
+                onCategoryChange={c => setForm(f => ({ ...f, category: c }))}
+                onSubcategoryChange={s => setForm(f => ({ ...f, subcategory: s }))} />
             </FormField>
           </div>
           <FormField label="Pay from (optional)">

@@ -1,14 +1,15 @@
 import { useState, useMemo } from 'react'
 import { Plus, Pencil, Trash2, Search, ChevronDown, ChevronUp } from 'lucide-react'
 import { useStore } from '../store'
-import { Transaction, TransactionType, CATEGORIES, Category } from '../types'
+import { Transaction, TransactionType, CATEGORIES } from '../types'
+import CategoryPicker from './CategoryPicker'
 import { formatCurrency, formatDate, todayISO, getMonthStartEnd } from '../utils/helpers'
 import { api } from '../utils/api'
 import { Modal, FormField } from './Accounts'
 
 const emptyForm = {
-  type: 'expense' as TransactionType, amount: '', category: 'Household' as Category,
-  description: '', accountId: '', date: todayISO(), merchant: '', notes: '',
+  type: 'expense' as TransactionType, amount: '', category: 'Housing',
+  subcategory: '', description: '', accountId: '', date: todayISO(), merchant: '', notes: '',
 }
 
 export default function Transactions() {
@@ -18,7 +19,7 @@ export default function Transactions() {
   const [form, setForm] = useState(emptyForm)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [filter, setFilter] = useState<TransactionType | 'all'>('all')
-  const [catFilter, setCatFilter] = useState<Category | 'all'>('all')
+  const [catFilter, setCatFilter] = useState<string>('all')
   const [search, setSearch] = useState('')
   const [expandedTx, setExpandedTx] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState<'date' | 'amount'>('date')
@@ -47,7 +48,7 @@ export default function Transactions() {
   }
   function openEdit(t: Transaction) {
     setEditing(t)
-    setForm({ type: t.type, amount: String(t.amount), category: t.category, description: t.description, accountId: t.accountId, date: t.date, merchant: t.merchant || '', notes: t.notes || '' })
+    setForm({ type: t.type, amount: String(t.amount), category: t.category, subcategory: t.subcategory || '', description: t.description, accountId: t.accountId, date: t.date, merchant: t.merchant || '', notes: t.notes || '' })
     setShowForm(true)
   }
 
@@ -191,7 +192,9 @@ export default function Transactions() {
           <FormField label="Description"><input className="input" placeholder="What for?" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} /></FormField>
           <div className="grid grid-cols-2 gap-3">
             <FormField label="Category">
-              <select className="input" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value as Category }))}>{CATEGORIES.map(c => <option key={c}>{c}</option>)}</select>
+              <CategoryPicker category={form.category} subcategory={form.subcategory}
+                onCategoryChange={c => setForm(f => ({ ...f, category: c }))}
+                onSubcategoryChange={s => setForm(f => ({ ...f, subcategory: s }))} />
             </FormField>
             <FormField label="Account">
               <select className="input" value={form.accountId} onChange={e => setForm(f => ({ ...f, accountId: e.target.value }))}>

@@ -1,5 +1,5 @@
 import Tesseract from 'tesseract.js'
-import { Category, CATEGORIES } from '../types'
+import { CATEGORIES } from '../types'
 
 export interface OcrLineItem {
   description: string
@@ -8,7 +8,7 @@ export interface OcrLineItem {
   unitPrice: number
   tax: number
   discount: number
-  suggestedCategory: Category
+  suggestedCategory: string
 }
 
 export interface OcrResult {
@@ -20,24 +20,27 @@ export interface OcrResult {
   discount?: number
   total?: number
   lineItems: OcrLineItem[]
-  suggestedCategory: Category
+  suggestedCategory: string
   rawText: string
   confidence: number
 }
 
-const CATEGORY_KEYWORDS: Record<Category, string[]> = {
-  'Household': ['grocery', 'groceries', 'supermarket', 'walmart', 'target', 'costco', 'kroger', 'safeway', 'aldi', 'trader joe', 'whole foods', 'home depot', 'lowes', 'ikea', 'cleaning', 'detergent', 'kitchen', 'bathroom', 'furniture', 'rent', 'utility', 'water', 'electric', 'gas bill'],
-  'Car': ['gas', 'fuel', 'shell', 'chevron', 'exxon', 'bp', 'petrol', 'auto', 'mechanic', 'tire', 'oil change', 'car wash', 'parking', 'uber', 'lyft', 'transit', 'metro'],
-  'Personal': ['pharmacy', 'cvs', 'walgreens', 'health', 'doctor', 'dental', 'gym', 'fitness', 'salon', 'barber', 'haircut', 'spa', 'clothing', 'apparel', 'nike', 'adidas', 'zara', 'h&m'],
-  'Entertainment': ['restaurant', 'cafe', 'coffee', 'starbucks', 'mcdonald', 'pizza', 'burger', 'bar', 'pub', 'netflix', 'spotify', 'movie', 'cinema', 'theater', 'gaming', 'steam', 'playstation', 'xbox', 'hobby'],
+const CATEGORY_KEYWORDS: Record<string, string[]> = {
+  'Housing': ['grocery', 'groceries', 'supermarket', 'walmart', 'target', 'costco', 'kroger', 'safeway', 'aldi', 'trader joe', 'whole foods', 'home depot', 'lowes', 'ikea', 'cleaning', 'detergent', 'kitchen', 'bathroom', 'furniture', 'rent'],
+  'Utilities': ['utility', 'water', 'electric', 'gas bill', 'internet', 'phone', 'comcast', 'at&t', 'verizon'],
+  'Transportation': ['gas', 'fuel', 'shell', 'chevron', 'exxon', 'bp', 'petrol', 'auto', 'mechanic', 'tire', 'oil change', 'car wash', 'parking', 'uber', 'lyft', 'transit', 'metro'],
+  'Food & Dining': ['restaurant', 'cafe', 'coffee', 'starbucks', 'mcdonald', 'pizza', 'burger', 'bar', 'pub', 'chipotle', 'delivery', 'doordash', 'grubhub'],
+  'Healthcare': ['pharmacy', 'cvs', 'walgreens', 'health', 'doctor', 'dental', 'hospital', 'medical', 'insurance'],
+  'Personal': ['gym', 'fitness', 'salon', 'barber', 'haircut', 'spa', 'clothing', 'apparel', 'nike', 'adidas', 'zara', 'h&m'],
+  'Entertainment': ['netflix', 'spotify', 'movie', 'cinema', 'theater', 'gaming', 'steam', 'playstation', 'xbox', 'hobby', 'concert'],
   'Education': ['book', 'university', 'college', 'tuition', 'course', 'udemy', 'coursera', 'school', 'textbook', 'software', 'adobe', 'microsoft'],
-  'Loans / Debt Service': ['loan', 'mortgage', 'payment', 'interest', 'principal', 'emi', 'installment', 'debt'],
-  'Subscription': ['subscription', 'monthly plan', 'annual plan', 'membership', 'premium', 'pro plan', 'recurring'],
+  'Debt Payments': ['loan', 'mortgage', 'payment', 'interest', 'principal', 'emi', 'installment', 'debt'],
+  'Subscriptions': ['subscription', 'monthly plan', 'annual plan', 'membership', 'premium', 'pro plan', 'recurring'],
 }
 
-function suggestCategory(text: string): Category {
+function suggestCategory(text: string): string {
   const lower = text.toLowerCase()
-  let bestCat: Category = 'Household'
+  let bestCat = 'Housing'
   let bestScore = 0
   for (const [cat, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
     let score = 0
@@ -46,7 +49,7 @@ function suggestCategory(text: string): Category {
     }
     if (score > bestScore) {
       bestScore = score
-      bestCat = cat as Category
+      bestCat = cat as string
     }
   }
   return bestCat
