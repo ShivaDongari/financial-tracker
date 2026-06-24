@@ -7,6 +7,7 @@ import { formatCurrency, formatDateShort, daysUntil, getWeekRange, getFunInsight
 import { api } from '../utils/api'
 import { DashboardData, CATEGORIES } from '../types'
 import MonthSelector from './MonthSelector'
+import { BudgetSummaryWidget } from './Budgets'
 
 const COLORS = ['#6366f1', '#ef4444', '#f59e0b', '#22c55e', '#3b82f6', '#ec4899', '#06b6d4', '#8b5cf6', '#14b8a6', '#f97316', '#64748b', '#a855f7']
 
@@ -175,6 +176,8 @@ export default function Dashboard() {
               </ResponsiveContainer>
             </div>
           )}
+
+          <BudgetSummaryWidget />
 
           {insights.length > 0 && (
             <div className="card">

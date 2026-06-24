@@ -60,6 +60,18 @@ export function getMonthStartEnd(monthKey: string): { start: string; end: string
   return { start, end }
 }
 
+export function getNextOccurrence(dateStr: string, frequency: string): string {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const date = new Date(y, m - 1, d)
+  switch (frequency) {
+    case 'weekly': date.setDate(date.getDate() + 7); break
+    case 'monthly': date.setMonth(date.getMonth() + 1); break
+    case 'quarterly': date.setMonth(date.getMonth() + 3); break
+    case 'yearly': date.setFullYear(date.getFullYear() + 1); break
+  }
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
 export function getWeekRange(): { start: string; end: string } {
   const now = new Date()
   const day = now.getDay()

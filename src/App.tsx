@@ -9,13 +9,14 @@ import Bills from './components/Bills'
 import Scanner from './components/Scanner'
 import Settings from './components/Settings'
 import Subscriptions from './components/Subscriptions'
+import Budgets from './components/Budgets'
+import Reconciliation from './components/Reconciliation'
 import DetailedAssets from './components/DetailedAssets'
 import AllMonthsIncome from './components/AllMonthsIncome'
 import DetailedLoans from './components/DetailedLoans'
 
 export default function App() {
   const refresh = useStore(s => s.refresh)
-
   useEffect(() => { refresh() }, [refresh])
 
   return (
@@ -26,6 +27,8 @@ export default function App() {
         <Route path="/transactions" element={<Transactions />} />
         <Route path="/bills" element={<Bills />} />
         <Route path="/subscriptions" element={<Subscriptions />} />
+        <Route path="/budgets" element={<Budgets />} />
+        <Route path="/reconciliation" element={<Reconciliation />} />
         <Route path="/scan" element={<Scanner />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/assets" element={<DetailedAssets />} />

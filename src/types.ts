@@ -110,6 +110,25 @@ export interface Subscription {
   createdAt: string
 }
 
+export interface Budget {
+  id: string
+  category: string
+  monthlyLimit: number
+  createdAt: string
+}
+
+export interface Reconciliation {
+  id: string
+  accountId: string
+  date: string
+  actualBalance: number
+  trackedBalance: number
+  difference: number
+  resolved: boolean
+  notes?: string
+  createdAt: string
+}
+
 export interface AppSettings {
   currency: string
   name: string

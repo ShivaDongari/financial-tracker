@@ -1,6 +1,6 @@
 import { db } from '../db'
-import { Account, Transaction, TransactionLineItem, Bill, Subscription, DashboardData, CATEGORY_TREE } from '../types'
-import { generateId, daysUntil, getMonthStartEnd, todayISO, currentMonthKey } from './helpers'
+import { Account, Transaction, TransactionLineItem, Bill, Subscription, Budget, Reconciliation, DashboardData, CATEGORY_TREE } from '../types'
+import { generateId, daysUntil, getMonthStartEnd, todayISO, currentMonthKey, getNextOccurrence } from './helpers'
 
 type NewAccount = Omit<Account, 'id' | 'createdAt'>
 type NewTransaction = Omit<Transaction, 'id' | 'createdAt' | 'lineItems'> & { lineItems?: TransactionLineItem[] }
@@ -256,26 +256,164 @@ export const api = {
     }
   },
 
+  // ── Budgets ──
+
+  async getBudgets(): Promise<Budget[]> {
+    return db.budgets.toArray()
+  },
+
+  async setBudget(category: string, monthlyLimit: number): Promise<Budget> {
+    const existing = await db.budgets.where('category').equals(category).first()
+    if (existing) {
+      await db.budgets.update(existing.id, { monthlyLimit })
+      return { ...existing, monthlyLimit }
+    }
+    const budget: Budget = { id: generateId(), category, monthlyLimit, createdAt: new Date().toISOString() }
+    await db.budgets.add(budget)
+    return budget
+  },
+
+  async deleteBudget(id: string): Promise<void> {
+    await db.budgets.delete(id)
+  },
+
+  async getBudgetStatus(monthKey?: string): Promise<{ category: string; limit: number; spent: number; percent: number; over: boolean }[]> {
+    const budgets = await db.budgets.toArray()
+    if (!budgets.length) return []
+    const mk = monthKey || currentMonthKey()
+    const { start: mStart, end: mEnd } = getMonthStartEnd(mk)
+    const txs = await db.transactions.where('date').between(mStart, mEnd, true, true).toArray()
+    const expenseTxs = txs.filter(t => t.type === 'expense')
+
+    return budgets.map(b => {
+      let spent = 0
+      for (const tx of expenseTxs) {
+        if (tx.lineItems?.length) {
+          for (const li of tx.lineItems) { if (li.category === b.category) spent += li.amount }
+        } else {
+          if (tx.category === b.category) spent += tx.amount
+        }
+      }
+      const percent = b.monthlyLimit > 0 ? (spent / b.monthlyLimit) * 100 : 0
+      return { category: b.category, limit: b.monthlyLimit, spent, percent, over: percent >= 100 }
+    }).sort((a, b) => b.percent - a.percent)
+  },
+
+  // ── Reconciliation ──
+
+  async getReconciliations(accountId?: string): Promise<Reconciliation[]> {
+    if (accountId) return db.reconciliations.where('accountId').equals(accountId).reverse().sortBy('date')
+    return db.reconciliations.orderBy('date').reverse().toArray()
+  },
+
+  async createReconciliation(accountId: string, actualBalance: number, notes?: string): Promise<Reconciliation> {
+    const account = await db.accounts.get(accountId)
+    if (!account) throw new Error('Account not found')
+    const recon: Reconciliation = {
+      id: generateId(), accountId, date: todayISO(),
+      actualBalance, trackedBalance: account.balance,
+      difference: actualBalance - account.balance,
+      resolved: false, notes, createdAt: new Date().toISOString(),
+    }
+    await db.reconciliations.add(recon)
+    return recon
+  },
+
+  async resolveReconciliation(id: string, adjustBalance: boolean): Promise<void> {
+    const recon = await db.reconciliations.get(id)
+    if (!recon) return
+    await db.transaction('rw', db.reconciliations, db.accounts, db.transactions, async () => {
+      await db.reconciliations.update(id, { resolved: true })
+      if (adjustBalance && recon.difference !== 0) {
+        await db.accounts.update(recon.accountId, { balance: recon.actualBalance })
+        await db.transactions.add({
+          id: generateId(), type: recon.difference > 0 ? 'income' : 'expense',
+          amount: Math.abs(recon.difference), category: 'Other',
+          description: `Reconciliation adjustment`, accountId: recon.accountId,
+          date: todayISO(), notes: recon.notes || 'Balance adjusted to match actual',
+          lineItems: [], createdAt: new Date().toISOString(),
+        })
+      }
+    })
+  },
+
+  // ── Recurring Automation ──
+
+  async processRecurringBills(): Promise<{ generated: number; notifications: string[] }> {
+    const today = todayISO()
+    const bills = await db.bills.where('paid').equals(0).toArray()
+    let generated = 0
+    const notifications: string[] = []
+
+    for (const bill of bills) {
+      if (bill.noDueDate || bill.frequency === 'once') continue
+      if (!bill.dueDate || bill.dueDate > today) {
+        const d = bill.dueDate ? daysUntil(bill.dueDate) : null
+        if (d !== null && d >= 0 && d <= 3) {
+          notifications.push(`${bill.name} is due ${d === 0 ? 'today' : `in ${d} day${d > 1 ? 's' : ''}`} (${bill.amount.toFixed(2)})`)
+        }
+        continue
+      }
+
+      // Bill is past due — auto-generate if it has a payment account
+      if (bill.accountId && bill.dueDate <= today) {
+        const txId = generateId()
+        await db.transaction('rw', db.bills, db.transactions, db.accounts, async () => {
+          await db.bills.update(bill.id, { paid: true, paidDate: today, paidTransactionId: txId })
+          await db.transactions.add({
+            id: txId, type: 'expense', amount: bill.amount, category: bill.category,
+            subcategory: bill.subcategory, description: `Auto-paid: ${bill.name}`,
+            accountId: bill.accountId!, date: today, notes: 'Auto-generated recurring payment',
+            billId: bill.id, lineItems: [], createdAt: new Date().toISOString(),
+          })
+          const acc = await db.accounts.get(bill.accountId!)
+          if (acc) {
+            const nb = acc.type === 'credit_card' ? acc.balance + bill.amount : acc.balance - bill.amount
+            await db.accounts.update(bill.accountId!, { balance: nb })
+          }
+
+          // Create next occurrence
+          const nextDate = getNextOccurrence(bill.dueDate, bill.frequency)
+          const newBillId = generateId()
+          await db.bills.add({
+            ...bill, id: newBillId, dueDate: nextDate, paid: false,
+            paidDate: undefined, paidTransactionId: undefined, createdAt: new Date().toISOString(),
+          })
+          if (bill.subscriptionId) {
+            await db.subscriptions.update(bill.subscriptionId, { linkedBillId: newBillId, nextRenewal: nextDate })
+          }
+        })
+        generated++
+        notifications.push(`Auto-paid ${bill.name} and scheduled next occurrence`)
+      }
+    }
+
+    return { generated, notifications }
+  },
+
   // ── Export/Import ──
 
   async exportAll(): Promise<string> {
-    const [accounts, transactions, bills, subscriptions, settings] = await Promise.all([
+    const [accounts, transactions, bills, subscriptions, budgets, reconciliations, settings] = await Promise.all([
       db.accounts.toArray(), db.transactions.toArray(), db.bills.toArray(),
-      db.subscriptions.toArray(), api.getSettings(),
+      db.subscriptions.toArray(), db.budgets.toArray(), db.reconciliations.toArray(), api.getSettings(),
     ])
-    return JSON.stringify({ accounts, transactions, bills, subscriptions, settings })
+    return JSON.stringify({ accounts, transactions, bills, subscriptions, budgets, reconciliations, settings })
   },
 
   async importAll(json: string): Promise<boolean> {
     try {
       const data = JSON.parse(json)
       if (!data.accounts || !data.transactions || !data.bills) return false
-      await db.transaction('rw', db.accounts, db.transactions, db.bills, db.subscriptions, db.settings, async () => {
-        await db.accounts.clear(); await db.transactions.clear(); await db.bills.clear(); await db.subscriptions.clear()
+      await db.transaction('rw', [db.accounts, db.transactions, db.bills, db.subscriptions, db.budgets, db.reconciliations, db.settings], async () => {
+        await db.accounts.clear(); await db.transactions.clear(); await db.bills.clear()
+        await db.subscriptions.clear(); await db.budgets.clear(); await db.reconciliations.clear()
         if (data.accounts.length) await db.accounts.bulkAdd(data.accounts)
         if (data.transactions.length) await db.transactions.bulkAdd(data.transactions)
         if (data.bills.length) await db.bills.bulkAdd(data.bills)
         if (data.subscriptions?.length) await db.subscriptions.bulkAdd(data.subscriptions)
+        if (data.budgets?.length) await db.budgets.bulkAdd(data.budgets)
+        if (data.reconciliations?.length) await db.reconciliations.bulkAdd(data.reconciliations)
         if (data.settings) await db.settings.put({ ...data.settings, id: 'app' })
       })
       return true
