@@ -1,23 +1,24 @@
 import { useMemo } from 'react'
 import { ArrowLeft, TrendingUp } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
+import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store'
 import { formatCurrency, getMonthlyBreakdown } from '../utils/helpers'
 
-interface Props { onBack: () => void }
-
-export default function AllMonthsIncome({ onBack }: Props) {
-  const { data } = useStore()
-  const cur = data.settings.currency
+export default function AllMonthsIncome() {
+  const navigate = useNavigate()
+  const transactions = useStore(s => s.transactions)
+  const settings = useStore(s => s.settings)
+  const cur = settings.currency
 
   const monthlyIncome = useMemo(() =>
-    getMonthlyBreakdown(data.transactions, 'income'),
-    [data.transactions]
+    getMonthlyBreakdown(transactions, 'income'),
+    [transactions]
   )
 
   const monthlyExpenses = useMemo(() =>
-    getMonthlyBreakdown(data.transactions, 'expense'),
-    [data.transactions]
+    getMonthlyBreakdown(transactions, 'expense'),
+    [transactions]
   )
 
   const totalAllTime = monthlyIncome.reduce((s, m) => s + m.total, 0)
@@ -31,7 +32,7 @@ export default function AllMonthsIncome({ onBack }: Props) {
   return (
     <div className="p-4 lg:p-6 space-y-4 pb-24 lg:pb-6">
       <div className="flex items-center gap-3 pt-2">
-        <button onClick={onBack} className="p-2 rounded-xl hover:bg-[var(--bg-hover)] transition-colors t-secondary">
+        <button onClick={() => navigate('/')} className="p-2 rounded-xl hover:bg-[var(--bg-hover)] transition-colors t-secondary">
           <ArrowLeft size={20} />
         </button>
         <div>

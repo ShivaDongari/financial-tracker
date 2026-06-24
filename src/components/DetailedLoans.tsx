@@ -1,20 +1,22 @@
 import { useMemo } from 'react'
 import { ArrowLeft, BadgeDollarSign, CreditCard } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store'
 import { formatCurrency } from '../utils/helpers'
 import { Account } from '../types'
 
-interface Props { onBack: () => void }
-
-export default function DetailedLoans({ onBack }: Props) {
-  const { data } = useStore()
-  const cur = data.settings.currency
-  const debts = data.accounts.filter(a => a.type === 'loan' || a.type === 'credit_card')
+export default function DetailedLoans() {
+  const navigate = useNavigate()
+  const accounts = useStore(s => s.accounts)
+  const transactions = useStore(s => s.transactions)
+  const settings = useStore(s => s.settings)
+  const cur = settings.currency
+  const debts = accounts.filter(a => a.type === 'loan' || a.type === 'credit_card')
   const totalDebt = debts.reduce((s, a) => s + a.balance, 0)
 
   const debtTransactions = useMemo(() =>
-    data.transactions.filter(t => t.category === 'Loans / Debt Service').sort((a, b) => b.date.localeCompare(a.date)),
-    [data.transactions]
+    transactions.filter(t => t.category === 'Loans / Debt Service').sort((a, b) => b.date.localeCompare(a.date)),
+    [transactions]
   )
 
   const totalPaid = debtTransactions.reduce((s, t) => s + t.amount, 0)
@@ -97,7 +99,7 @@ export default function DetailedLoans({ onBack }: Props) {
   return (
     <div className="p-4 lg:p-6 space-y-4 pb-24 lg:pb-6">
       <div className="flex items-center gap-3 pt-2">
-        <button onClick={onBack} className="p-2 rounded-xl hover:bg-[var(--bg-hover)] transition-colors t-secondary">
+        <button onClick={() => navigate('/')} className="p-2 rounded-xl hover:bg-[var(--bg-hover)] transition-colors t-secondary">
           <ArrowLeft size={20} />
         </button>
         <div>

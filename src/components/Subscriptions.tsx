@@ -13,15 +13,18 @@ const emptyForm = {
 }
 
 export default function Subscriptions() {
-  const { data, refreshSubscriptions } = useStore()
+  const accounts = useStore(s => s.accounts)
+  const subscriptions = useStore(s => s.subscriptions)
+  const settings = useStore(s => s.settings)
+  const refreshSubscriptions = useStore(s => s.refreshSubscriptions)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<Subscription | null>(null)
   const [form, setForm] = useState(emptyForm)
   const [deleteId, setDeleteId] = useState<string | null>(null)
-  const cur = data.settings.currency
+  const cur = settings.currency
 
-  const active = data.subscriptions.filter(s => s.active).sort((a, b) => a.nextRenewal.localeCompare(b.nextRenewal))
-  const inactive = data.subscriptions.filter(s => !s.active)
+  const active = subscriptions.filter(s => s.active).sort((a, b) => a.nextRenewal.localeCompare(b.nextRenewal))
+  const inactive = subscriptions.filter(s => !s.active)
   const totalMonthly = active.reduce((s, sub) => {
     if (sub.frequency === 'monthly') return s + sub.amount
     if (sub.frequency === 'quarterly') return s + sub.amount / 3
@@ -100,7 +103,7 @@ export default function Subscriptions() {
               </tr>
             </thead>
             <tbody>
-              {data.subscriptions.length === 0 && (
+              {subscriptions.length === 0 && (
                 <tr><td colSpan={7} className="table-cell text-center t-muted py-8">No subscriptions yet. Add your first one.</td></tr>
               )}
               {[...active, ...inactive].map(sub => {
@@ -162,7 +165,7 @@ export default function Subscriptions() {
           </div>
           <FormField label="Pay from (optional)">
             <select className="input" value={form.accountId} onChange={e => setForm(f => ({ ...f, accountId: e.target.value }))}>
-              <option value="">None</option>{data.accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+              <option value="">None</option>{accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
             </select>
           </FormField>
           <FormField label="Notes"><input className="input" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} /></FormField>

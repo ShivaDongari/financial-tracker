@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { ScanLine, Upload, Camera, Loader2, CheckCircle, AlertCircle, Edit3, Plus, Trash2, Sparkles } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store'
 import { CATEGORIES, TransactionType, TransactionLineItem } from '../types'
 import { todayISO, formatCurrency } from '../utils/helpers'
@@ -7,11 +8,13 @@ import { scanReceipt, OcrResult } from '../utils/ocr'
 import { api } from '../utils/api'
 import { FormField, Modal } from './Accounts'
 
-interface Props { onSaved: () => void }
 type Step = 'upload' | 'scanning' | 'review' | 'done'
 
-export default function Scanner({ onSaved }: Props) {
-  const { data, refreshTransactions } = useStore()
+export default function Scanner() {
+  const navigate = useNavigate()
+  const accounts = useStore(s => s.accounts)
+  const settings = useStore(s => s.settings)
+  const refreshTransactions = useStore(s => s.refreshTransactions)
   const [step, setStep] = useState<Step>('upload')
   const [error, setError] = useState('')
   const [ocrResult, setOcrResult] = useState<OcrResult | null>(null)
@@ -23,7 +26,7 @@ export default function Scanner({ onSaved }: Props) {
   const [lineItems, setLineItems] = useState<TransactionLineItem[]>([])
   const fileRef = useRef<HTMLInputElement>(null)
   const cameraRef = useRef<HTMLInputElement>(null)
-  const cur = data.settings.currency
+  const cur = settings.currency
 
   async function handleFile(file: File) {
     setError('')
@@ -38,7 +41,7 @@ export default function Scanner({ onSaved }: Props) {
         merchant: result.merchant || '',
         date: result.date || todayISO(),
         category: result.suggestedCategory,
-        accountId: data.accounts[0]?.id || '',
+        accountId: accounts[0]?.id || '',
         notes: [
           result.tax ? `Tax: $${result.tax.toFixed(2)}` : '',
           result.discount ? `Discount: -$${result.discount.toFixed(2)}` : '',
@@ -101,7 +104,7 @@ export default function Scanner({ onSaved }: Props) {
         <p className="text-sm t-secondary mb-6">{lineItems.length} item(s) logged with AI-suggested categories.</p>
         <div className="flex gap-3">
           <button onClick={() => { setStep('upload'); setLineItems([]); setOcrResult(null) }} className="btn-secondary px-6">Scan Another</button>
-          <button onClick={onSaved} className="btn-primary px-6">View Activity</button>
+          <button onClick={() => navigate('/transactions')} className="btn-primary px-6">View Activity</button>
         </div>
       </div>
     )
@@ -173,7 +176,7 @@ export default function Scanner({ onSaved }: Props) {
             <FormField label="Account">
               <select className="input" value={form.accountId} onChange={e => setForm(f => ({ ...f, accountId: e.target.value }))}>
                 <option value="">Select account</option>
-                {data.accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
               </select>
             </FormField>
             <FormField label="Notes">

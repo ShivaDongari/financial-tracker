@@ -1,183 +1,221 @@
-import { Account, Transaction, Bill, Subscription, AppSettings, TransactionLineItem } from '../types'
-import { generateId, daysUntil, getMonthStartEnd, todayISO } from './helpers'
+import { db } from '../db'
+import { Account, Transaction, TransactionLineItem, Bill, Subscription, DashboardData, CATEGORY_TREE } from '../types'
+import { generateId, daysUntil, getMonthStartEnd, todayISO, currentMonthKey } from './helpers'
 
-const STORAGE_KEY = 'finance_tracker_v2'
+type NewAccount = Omit<Account, 'id' | 'createdAt'>
+type NewTransaction = Omit<Transaction, 'id' | 'createdAt' | 'lineItems'> & { lineItems?: TransactionLineItem[] }
+type NewBill = Omit<Bill, 'id' | 'createdAt'>
+type NewSubscription = Omit<Subscription, 'id' | 'createdAt'>
 
-interface StoredData {
-  accounts: Account[]
-  transactions: Transaction[]
-  bills: Bill[]
-  subscriptions: Subscription[]
-  settings: AppSettings
+interface AppSettings {
+  currency: string
+  name: string
+  darkMode: boolean
+  selectedMonth: string
 }
-
-function load(): StoredData {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) {
-      const p = JSON.parse(raw)
-      if (!p.subscriptions) p.subscriptions = []
-      return p
-    }
-  } catch {}
-  return { accounts: [], transactions: [], bills: [], subscriptions: [], settings: { currency: 'USD', name: '', darkMode: false } }
-}
-
-function save(data: StoredData) { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)) }
 
 export const api = {
-  getSettings: async (): Promise<AppSettings> => load().settings,
-  updateSettings: async (updates: Partial<AppSettings>): Promise<AppSettings> => {
-    const d = load(); d.settings = { ...d.settings, ...updates }; save(d); return d.settings
+  // ── Settings ──
+
+  async getSettings(): Promise<AppSettings> {
+    const s = await db.settings.get('app')
+    return s ?? { currency: 'USD', name: '', darkMode: false, selectedMonth: currentMonthKey() }
   },
 
-  getAccounts: async (): Promise<Account[]> => load().accounts,
-  createAccount: async (input: any): Promise<Account> => {
-    const d = load(); const a = { ...input, id: generateId(), createdAt: new Date().toISOString() } as Account
-    d.accounts.unshift(a); save(d); return a
-  },
-  updateAccount: async (id: string, updates: Partial<Account>): Promise<Account> => {
-    const d = load(); const i = d.accounts.findIndex(a => a.id === id)
-    if (i >= 0) d.accounts[i] = { ...d.accounts[i], ...updates }; save(d); return d.accounts[i]
-  },
-  deleteAccount: async (id: string): Promise<void> => {
-    const d = load(); d.accounts = d.accounts.filter(a => a.id !== id)
-    d.transactions = d.transactions.filter(t => t.accountId !== id); save(d)
+  async updateSettings(updates: Partial<AppSettings>): Promise<AppSettings> {
+    const current = await api.getSettings()
+    const merged = { ...current, ...updates, id: 'app' }
+    await db.settings.put(merged)
+    return merged
   },
 
-  getTransactions: async (): Promise<Transaction[]> => load().transactions,
-  createTransaction: async (input: any): Promise<Transaction> => {
-    const d = load()
-    const { lineItems: raw, ...rest } = input
-    const lineItems: TransactionLineItem[] = (raw || []).map((li: any) => ({ ...li, id: generateId() }))
-    const tx: Transaction = { ...rest, lineItems, id: generateId(), createdAt: new Date().toISOString() }
-    d.transactions.unshift(tx); save(d); return tx
+  // ── Accounts ──
+
+  async getAccounts(): Promise<Account[]> {
+    return db.accounts.orderBy('createdAt').reverse().toArray()
   },
-  updateTransaction: async (id: string, updates: any): Promise<Transaction> => {
-    const d = load(); const i = d.transactions.findIndex(t => t.id === id)
-    if (i >= 0) {
-      const { lineItems: raw, ...rest } = updates
-      const lineItems = raw ? raw.map((li: any) => ({ ...li, id: li.id || generateId() })) : d.transactions[i].lineItems
-      d.transactions[i] = { ...d.transactions[i], ...rest, lineItems }
+
+  async createAccount(input: NewAccount): Promise<Account> {
+    const account: Account = { ...input, id: generateId(), createdAt: new Date().toISOString() }
+    await db.accounts.add(account)
+    return account
+  },
+
+  async updateAccount(id: string, updates: Partial<Account>): Promise<void> {
+    await db.accounts.update(id, updates)
+  },
+
+  async deleteAccount(id: string): Promise<void> {
+    await db.transaction('rw', db.accounts, db.transactions, async () => {
+      await db.accounts.delete(id)
+      await db.transactions.where('accountId').equals(id).delete()
+    })
+  },
+
+  // ── Transactions ──
+
+  async getTransactions(): Promise<Transaction[]> {
+    return db.transactions.orderBy('date').reverse().toArray()
+  },
+
+  async createTransaction(input: NewTransaction): Promise<Transaction> {
+    const lineItems = (input.lineItems || []).map(li => ({ ...li, id: li.id || generateId() }))
+    const tx: Transaction = { ...input, lineItems, id: generateId(), createdAt: new Date().toISOString() }
+    await db.transactions.add(tx)
+    return tx
+  },
+
+  async updateTransaction(id: string, updates: Partial<Transaction>): Promise<void> {
+    if (updates.lineItems) {
+      updates.lineItems = updates.lineItems.map(li => ({ ...li, id: li.id || generateId() }))
     }
-    save(d); return d.transactions[i]
-  },
-  deleteTransaction: async (id: string): Promise<void> => {
-    const d = load(); d.transactions = d.transactions.filter(t => t.id !== id); save(d)
+    await db.transactions.update(id, updates)
   },
 
-  getBills: async (): Promise<Bill[]> => load().bills,
-  createBill: async (input: any): Promise<Bill> => {
-    const d = load(); const b = { ...input, id: generateId(), createdAt: new Date().toISOString() } as Bill
-    d.bills.push(b); save(d); return b
+  async deleteTransaction(id: string): Promise<void> {
+    await db.transactions.delete(id)
   },
-  updateBill: async (id: string, updates: Partial<Bill>): Promise<Bill> => {
-    const d = load(); const i = d.bills.findIndex(b => b.id === id)
-    if (i >= 0) d.bills[i] = { ...d.bills[i], ...updates }; save(d); return d.bills[i]
+
+  // ── Bills ──
+
+  async getBills(): Promise<Bill[]> {
+    return db.bills.toArray()
   },
-  deleteBill: async (id: string): Promise<void> => {
-    const d = load()
-    const bill = d.bills.find(b => b.id === id)
+
+  async createBill(input: NewBill): Promise<Bill> {
+    const bill: Bill = { ...input, id: generateId(), createdAt: new Date().toISOString() }
+    await db.bills.add(bill)
+    return bill
+  },
+
+  async updateBill(id: string, updates: Partial<Bill>): Promise<void> {
+    await db.bills.update(id, updates)
+  },
+
+  async deleteBill(id: string): Promise<void> {
+    const bill = await db.bills.get(id)
     if (bill?.subscriptionId) {
-      const sub = d.subscriptions.find(s => s.id === bill.subscriptionId)
-      if (sub) sub.linkedBillId = undefined
+      await db.subscriptions.update(bill.subscriptionId, { linkedBillId: undefined })
     }
-    d.bills = d.bills.filter(b => b.id !== id); save(d)
+    await db.bills.delete(id)
   },
 
-  payBill: async (billId: string, accountId: string): Promise<void> => {
-    const d = load(); const bill = d.bills.find(b => b.id === billId)
+  async payBill(billId: string, accountId: string): Promise<void> {
+    const bill = await db.bills.get(billId)
     if (!bill) return
     const today = todayISO()
     const txId = generateId()
-    bill.paid = true; bill.paidDate = today; bill.paidTransactionId = txId
-    const tx: Transaction = {
-      id: txId, type: 'expense', amount: bill.amount, category: bill.category,
-      subcategory: bill.subcategory, description: `Bill payment: ${bill.name}`,
-      accountId, date: today, notes: 'Auto-created from bill payment',
-      billId: bill.id, lineItems: [], createdAt: new Date().toISOString(),
-    }
-    d.transactions.unshift(tx)
-    const acc = d.accounts.find(a => a.id === accountId)
-    if (acc) { acc.balance = acc.type === 'credit_card' ? acc.balance + bill.amount : acc.balance - bill.amount }
-    save(d)
-  },
 
-  unpayBill: async (billId: string): Promise<void> => {
-    const d = load(); const bill = d.bills.find(b => b.id === billId)
-    if (!bill || !bill.paid) return
-    if (bill.paidTransactionId) {
-      const tx = d.transactions.find(t => t.id === bill.paidTransactionId)
-      if (tx) {
-        const acc = d.accounts.find(a => a.id === tx.accountId)
-        if (acc) { acc.balance = acc.type === 'credit_card' ? acc.balance - tx.amount : acc.balance + tx.amount }
-        d.transactions = d.transactions.filter(t => t.id !== bill.paidTransactionId)
+    await db.transaction('rw', db.bills, db.transactions, db.accounts, async () => {
+      await db.bills.update(billId, { paid: true, paidDate: today, paidTransactionId: txId })
+
+      await db.transactions.add({
+        id: txId, type: 'expense', amount: bill.amount, category: bill.category,
+        subcategory: bill.subcategory, description: `Bill payment: ${bill.name}`,
+        accountId, date: today, notes: 'Auto-created from bill payment',
+        billId: bill.id, lineItems: [], createdAt: new Date().toISOString(),
+      })
+
+      const acc = await db.accounts.get(accountId)
+      if (acc) {
+        const newBalance = acc.type === 'credit_card' ? acc.balance + bill.amount : acc.balance - bill.amount
+        await db.accounts.update(accountId, { balance: newBalance })
       }
-    }
-    bill.paid = false; bill.paidDate = undefined; bill.paidTransactionId = undefined
-    save(d)
+    })
   },
 
-  getSubscriptions: async (): Promise<Subscription[]> => load().subscriptions,
+  async unpayBill(billId: string): Promise<void> {
+    const bill = await db.bills.get(billId)
+    if (!bill?.paid) return
 
-  createSubscription: async (input: any): Promise<Subscription> => {
-    const d = load()
-    const sub: Subscription = { ...input, id: generateId(), createdAt: new Date().toISOString() }
-    d.subscriptions.push(sub)
-    // Auto-create linked bill
-    const billId = generateId()
-    const bill: Bill = {
-      id: billId, name: sub.name, amount: sub.amount, dueDate: sub.nextRenewal,
-      frequency: sub.frequency, billType: 'fixed', accountId: sub.accountId,
-      category: sub.category, subcategory: sub.subcategory, paid: false,
-      subscriptionId: sub.id, createdAt: new Date().toISOString(),
-    }
-    d.bills.push(bill)
-    sub.linkedBillId = billId
-    save(d); return sub
-  },
-
-  updateSubscription: async (id: string, updates: Partial<Subscription>): Promise<Subscription> => {
-    const d = load(); const i = d.subscriptions.findIndex(s => s.id === id)
-    if (i >= 0) {
-      d.subscriptions[i] = { ...d.subscriptions[i], ...updates }
-      const sub = d.subscriptions[i]
-      // Sync linked bill
-      if (sub.linkedBillId) {
-        const bill = d.bills.find(b => b.id === sub.linkedBillId)
-        if (bill && !bill.paid) {
-          bill.name = sub.name; bill.amount = sub.amount; bill.dueDate = sub.nextRenewal
-          bill.frequency = sub.frequency; bill.category = sub.category
-          bill.subcategory = sub.subcategory; bill.accountId = sub.accountId
+    await db.transaction('rw', db.bills, db.transactions, db.accounts, async () => {
+      if (bill.paidTransactionId) {
+        const tx = await db.transactions.get(bill.paidTransactionId)
+        if (tx) {
+          const acc = await db.accounts.get(tx.accountId)
+          if (acc) {
+            const newBalance = acc.type === 'credit_card' ? acc.balance - tx.amount : acc.balance + tx.amount
+            await db.accounts.update(tx.accountId, { balance: newBalance })
+          }
+          await db.transactions.delete(bill.paidTransactionId)
         }
       }
-    }
-    save(d); return d.subscriptions[i]
+      await db.bills.update(billId, { paid: false, paidDate: undefined, paidTransactionId: undefined })
+    })
   },
 
-  deleteSubscription: async (id: string): Promise<void> => {
-    const d = load()
-    const sub = d.subscriptions.find(s => s.id === id)
-    if (sub?.linkedBillId) {
-      d.bills = d.bills.filter(b => b.id !== sub.linkedBillId)
-    }
-    d.subscriptions = d.subscriptions.filter(s => s.id !== id); save(d)
+  // ── Subscriptions ──
+
+  async getSubscriptions(): Promise<Subscription[]> {
+    return db.subscriptions.toArray()
   },
 
-  getDashboard: async (monthKey?: string) => {
-    const d = load()
+  async createSubscription(input: NewSubscription): Promise<Subscription> {
+    const subId = generateId()
+    const billId = generateId()
+
+    const sub: Subscription = { ...input, id: subId, linkedBillId: billId, createdAt: new Date().toISOString() }
+    const bill: Bill = {
+      id: billId, name: input.name, amount: input.amount, dueDate: input.nextRenewal,
+      frequency: input.frequency, billType: 'fixed', accountId: input.accountId,
+      category: input.category, subcategory: input.subcategory, paid: false,
+      subscriptionId: subId, createdAt: new Date().toISOString(),
+    }
+
+    await db.transaction('rw', db.subscriptions, db.bills, async () => {
+      await db.subscriptions.add(sub)
+      await db.bills.add(bill)
+    })
+    return sub
+  },
+
+  async updateSubscription(id: string, updates: Partial<Subscription>): Promise<void> {
+    await db.transaction('rw', db.subscriptions, db.bills, async () => {
+      await db.subscriptions.update(id, updates)
+      const sub = await db.subscriptions.get(id)
+      if (sub?.linkedBillId) {
+        const bill = await db.bills.get(sub.linkedBillId)
+        if (bill && !bill.paid) {
+          await db.bills.update(sub.linkedBillId, {
+            name: sub.name, amount: sub.amount, dueDate: sub.nextRenewal,
+            frequency: sub.frequency, category: sub.category, subcategory: sub.subcategory,
+            accountId: sub.accountId,
+          })
+        }
+      }
+    })
+  },
+
+  async deleteSubscription(id: string): Promise<void> {
+    const sub = await db.subscriptions.get(id)
+    await db.transaction('rw', db.subscriptions, db.bills, async () => {
+      if (sub?.linkedBillId) await db.bills.delete(sub.linkedBillId)
+      await db.subscriptions.delete(id)
+    })
+  },
+
+  // ── Dashboard ──
+
+  async getDashboard(monthKey?: string): Promise<DashboardData> {
     const today = todayISO()
     const mk = monthKey || today.slice(0, 7)
     const { start: mStart, end: mEnd } = getMonthStartEnd(mk)
     const isCurrentMonth = mk === today.slice(0, 7)
     const cutoff = isCurrentMonth ? today : mEnd
 
-    const monthTxs = d.transactions.filter(t => t.date >= mStart && t.date <= cutoff)
-    const futureTxs = isCurrentMonth ? d.transactions.filter(t => t.date > today && t.date <= mEnd) : []
+    const [accounts, allTx, allBills, allSubs] = await Promise.all([
+      db.accounts.toArray(),
+      db.transactions.where('date').between(mStart, mEnd, true, true).toArray(),
+      db.bills.toArray(),
+      db.subscriptions.where('active').equals(1).toArray(),
+    ])
+
+    const monthTxs = allTx.filter(t => t.date <= cutoff)
+    const futureTxs = isCurrentMonth ? allTx.filter(t => t.date > today) : []
     const scheduledExpenses = futureTxs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
 
-    const totalAssets = d.accounts.filter(a => ['bank', 'cash', 'income'].includes(a.type)).reduce((s, a) => s + a.balance, 0)
-    const totalDebt = d.accounts.filter(a => ['credit_card', 'loan'].includes(a.type)).reduce((s, a) => s + a.balance, 0)
+    const totalAssets = accounts.filter(a => ['bank', 'cash', 'income'].includes(a.type)).reduce((s, a) => s + a.balance, 0)
+    const totalDebt = accounts.filter(a => ['credit_card', 'loan'].includes(a.type)).reduce((s, a) => s + a.balance, 0)
     const monthlyIncome = monthTxs.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
     const monthlyExpenses = monthTxs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
 
@@ -190,44 +228,57 @@ export const api = {
       }
     }
 
-    const unpaidBills = d.bills.filter(b => !b.paid)
-    let upcomingCount = 0, dueSoonCount = 0, overdueCount = 0, paidCount = d.bills.filter(b => b.paid).length
+    const unpaidBills = allBills.filter(b => !b.paid)
+    let upcomingCount = 0, dueSoonCount = 0, overdueCount = 0
     for (const b of unpaidBills) {
       if (b.noDueDate) { upcomingCount++; continue }
-      const days = daysUntil(b.dueDate)
-      if (days < 0) overdueCount++
-      else if (days <= 7) dueSoonCount++
+      const d = daysUntil(b.dueDate)
+      if (d < 0) overdueCount++
+      else if (d <= 7) dueSoonCount++
       else upcomingCount++
     }
 
-    // Bills due this month (unpaid, with due date in selected month)
     const billsDueThisMonth = unpaidBills.filter(b => !b.noDueDate && b.dueDate >= mStart && b.dueDate <= mEnd)
-    const billsDueAmount = billsDueThisMonth.reduce((s, b) => s + b.amount, 0)
-
-    // Subscriptions due this month
-    const subsDueThisMonth = d.subscriptions.filter(s => s.active && s.nextRenewal >= mStart && s.nextRenewal <= mEnd)
-    const subsDueAmount = subsDueThisMonth.reduce((s, sub) => s + sub.amount, 0)
-
-    // Loan payments due this month
-    const loanPayments = d.accounts.filter(a => a.type === 'loan' && a.monthlyPayment).reduce((s, a) => s + (a.monthlyPayment || 0), 0)
-
-    // Credit card statement balances (simplified: use statementDueDay)
-    const ccDue = d.accounts.filter(a => a.type === 'credit_card' && a.statementDueDay).reduce((s, a) => s + a.balance, 0)
-
-    const totalDueThisMonth = billsDueAmount + loanPayments
+    const billsDue = billsDueThisMonth.reduce((s, b) => s + b.amount, 0)
+    const subsDue = allSubs.filter(s => s.nextRenewal >= mStart && s.nextRenewal <= mEnd).reduce((s, sub) => s + sub.amount, 0)
+    const loanPayments = accounts.filter(a => a.type === 'loan' && a.monthlyPayment).reduce((s, a) => s + (a.monthlyPayment || 0), 0)
 
     return {
       totalAssets, totalDebt, netWorth: totalAssets - totalDebt,
       monthlyIncome, monthlyExpenses, remainingBudget: monthlyIncome - monthlyExpenses,
-      categoryBreakdown, scheduledExpenses, upcomingCount, dueSoonCount, overdueCount, paidCount,
-      totalDueThisMonth,
+      categoryBreakdown, scheduledExpenses, upcomingCount, dueSoonCount, overdueCount,
+      paidCount: allBills.filter(b => b.paid).length,
+      totalDueThisMonth: billsDue + loanPayments,
       debtSummary: {
-        totalOutstanding: totalDebt,
-        dueThisMonth: billsDueAmount + loanPayments + ccDue,
-        billsDue: billsDueAmount,
-        subscriptionsDue: subsDueAmount,
-        loanPaymentsDue: loanPayments,
+        totalOutstanding: totalDebt, dueThisMonth: billsDue + loanPayments,
+        billsDue, subscriptionsDue: subsDue, loanPaymentsDue: loanPayments,
       },
     }
+  },
+
+  // ── Export/Import ──
+
+  async exportAll(): Promise<string> {
+    const [accounts, transactions, bills, subscriptions, settings] = await Promise.all([
+      db.accounts.toArray(), db.transactions.toArray(), db.bills.toArray(),
+      db.subscriptions.toArray(), api.getSettings(),
+    ])
+    return JSON.stringify({ accounts, transactions, bills, subscriptions, settings })
+  },
+
+  async importAll(json: string): Promise<boolean> {
+    try {
+      const data = JSON.parse(json)
+      if (!data.accounts || !data.transactions || !data.bills) return false
+      await db.transaction('rw', db.accounts, db.transactions, db.bills, db.subscriptions, db.settings, async () => {
+        await db.accounts.clear(); await db.transactions.clear(); await db.bills.clear(); await db.subscriptions.clear()
+        if (data.accounts.length) await db.accounts.bulkAdd(data.accounts)
+        if (data.transactions.length) await db.transactions.bulkAdd(data.transactions)
+        if (data.bills.length) await db.bills.bulkAdd(data.bills)
+        if (data.subscriptions?.length) await db.subscriptions.bulkAdd(data.subscriptions)
+        if (data.settings) await db.settings.put({ ...data.settings, id: 'app' })
+      })
+      return true
+    } catch { return false }
   },
 }

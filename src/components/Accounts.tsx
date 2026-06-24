@@ -18,12 +18,14 @@ const emptyForm = {
 }
 
 export default function Accounts() {
-  const { data, refreshAccounts } = useStore()
+  const accounts = useStore(s => s.accounts)
+  const settings = useStore(s => s.settings)
+  const refreshAccounts = useStore(s => s.refreshAccounts)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<Account | null>(null)
   const [form, setForm] = useState(emptyForm)
   const [deleteId, setDeleteId] = useState<string | null>(null)
-  const cur = data.settings.currency
+  const cur = settings.currency
 
   function openAdd() { setEditing(null); setForm({ ...emptyForm, currency: cur }); setShowForm(true) }
   function openEdit(a: Account) {
@@ -43,8 +45,8 @@ export default function Accounts() {
 
   async function handleDelete() { if (!deleteId) return; await api.deleteAccount(deleteId); await refreshAccounts(); setDeleteId(null) }
 
-  const totalAssets = data.accounts.filter(a => ['bank', 'cash', 'income'].includes(a.type)).reduce((s, a) => s + a.balance, 0)
-  const totalDebt = data.accounts.filter(a => ['credit_card', 'loan'].includes(a.type)).reduce((s, a) => s + a.balance, 0)
+  const totalAssets = accounts.filter(a => ['bank', 'cash', 'income'].includes(a.type)).reduce((s, a) => s + a.balance, 0)
+  const totalDebt = accounts.filter(a => ['credit_card', 'loan'].includes(a.type)).reduce((s, a) => s + a.balance, 0)
 
   return (
     <div className="p-4 lg:p-6 space-y-4 pb-24 lg:pb-6">
@@ -56,7 +58,7 @@ export default function Accounts() {
         <button onClick={openAdd} className="btn-primary self-start"><Plus size={14} className="inline mr-1" />Add Account</button>
       </div>
 
-      {data.accounts.length === 0 && (
+      {accounts.length === 0 && (
         <div className="text-center py-16 t-muted">
           <p className="font-medium t-secondary text-lg">No accounts yet</p>
           <p className="text-sm mt-1">Add your bank accounts, cards, and loans to begin tracking.</p>
@@ -64,7 +66,7 @@ export default function Accounts() {
       )}
 
       {/* Table view */}
-      {data.accounts.length > 0 && (
+      {accounts.length > 0 && (
         <div className="card !p-0 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -78,7 +80,7 @@ export default function Accounts() {
                 </tr>
               </thead>
               <tbody>
-                {data.accounts.map(a => {
+                {accounts.map(a => {
                   const Icon = TYPE_ICONS[a.type]
                   const isDebt = a.type === 'credit_card' || a.type === 'loan'
                   const limit = a.creditLimit || 0

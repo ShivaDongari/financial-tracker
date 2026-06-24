@@ -13,7 +13,11 @@ const emptyForm = {
 }
 
 export default function Transactions() {
-  const { data, refreshTransactions } = useStore()
+  const accounts = useStore(s => s.accounts)
+  const transactions = useStore(s => s.transactions)
+  const settings = useStore(s => s.settings)
+  const selectedMonth = useStore(s => s.selectedMonth)
+  const refreshTransactions = useStore(s => s.refreshTransactions)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<Transaction | null>(null)
   const [form, setForm] = useState(emptyForm)
@@ -24,11 +28,11 @@ export default function Transactions() {
   const [expandedTx, setExpandedTx] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState<'date' | 'amount'>('date')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
-  const cur = data.settings.currency
-  const { start: mStart, end: mEnd } = getMonthStartEnd(data.selectedMonth)
+  const cur = settings.currency
+  const { start: mStart, end: mEnd } = getMonthStartEnd(selectedMonth)
 
   const filtered = useMemo(() => {
-    let list = data.transactions
+    let list = transactions
     if (filter !== 'all') list = list.filter(t => t.type === filter)
     if (catFilter !== 'all') list = list.filter(t => t.category === catFilter)
     if (search) list = list.filter(t => (t.description + t.merchant + t.category).toLowerCase().includes(search.toLowerCase()))
@@ -37,14 +41,14 @@ export default function Transactions() {
       return sortDir === 'desc' ? -cmp : cmp
     })
     return list
-  }, [data.transactions, filter, catFilter, search, sortBy, sortDir])
+  }, [transactions, filter, catFilter, search, sortBy, sortDir])
 
   const monthTxs = filtered.filter(t => t.date >= mStart && t.date <= mEnd)
   const monthIncome = monthTxs.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
   const monthExpense = monthTxs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
 
   function openAdd() {
-    setEditing(null); setForm({ ...emptyForm, date: todayISO(), accountId: data.accounts[0]?.id || '' }); setShowForm(true)
+    setEditing(null); setForm({ ...emptyForm, date: todayISO(), accountId: accounts[0]?.id || '' }); setShowForm(true)
   }
   function openEdit(t: Transaction) {
     setEditing(t)
@@ -123,7 +127,7 @@ export default function Transactions() {
                 <tr><td colSpan={7} className="table-cell text-center t-muted py-8">No transactions found.</td></tr>
               )}
               {filtered.map(tx => {
-                const account = data.accounts.find(a => a.id === tx.accountId)
+                const account = accounts.find(a => a.id === tx.accountId)
                 const hasItems = tx.lineItems?.length > 0
                 const expanded = expandedTx === tx.id
                 return (
@@ -198,7 +202,7 @@ export default function Transactions() {
             </FormField>
             <FormField label="Account">
               <select className="input" value={form.accountId} onChange={e => setForm(f => ({ ...f, accountId: e.target.value }))}>
-                <option value="">Select</option>{data.accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                <option value="">Select</option>{accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
               </select>
             </FormField>
           </div>

@@ -17,7 +17,12 @@ const emptyForm = {
 }
 
 export default function Bills() {
-  const { data, refreshBills, refreshTransactions, refreshAccounts } = useStore()
+  const accounts = useStore(s => s.accounts)
+  const bills = useStore(s => s.bills)
+  const settings = useStore(s => s.settings)
+  const refreshBills = useStore(s => s.refreshBills)
+  const refreshTransactions = useStore(s => s.refreshTransactions)
+  const refreshAccounts = useStore(s => s.refreshAccounts)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<Bill | null>(null)
   const [form, setForm] = useState(emptyForm)
@@ -27,10 +32,10 @@ export default function Bills() {
   const [viewTab, setViewTab] = useState<'pending' | 'paid' | 'all'>('pending')
   const [typeFilter, setTypeFilter] = useState<'all' | 'fixed' | 'variable'>('all')
   const [search, setSearch] = useState('')
-  const cur = data.settings.currency
+  const cur = settings.currency
 
   const filtered = useMemo(() => {
-    let list = data.bills
+    let list = bills
     if (viewTab === 'pending') list = list.filter(b => !b.paid)
     else if (viewTab === 'paid') list = list.filter(b => b.paid)
     if (typeFilter !== 'all') list = list.filter(b => (b.billType || 'fixed') === typeFilter)
@@ -41,12 +46,12 @@ export default function Bills() {
       if (!a.noDueDate && b.noDueDate) return -1
       return a.dueDate.localeCompare(b.dueDate)
     })
-  }, [data.bills, viewTab, typeFilter, search])
+  }, [bills, viewTab, typeFilter, search])
 
   // Variable bill trends
   const trends = useMemo(() => {
     const byName: Record<string, number[]> = {}
-    for (const b of data.bills.filter(b => (b.billType || 'fixed') === 'variable' && b.paid)) {
+    for (const b of bills.filter(b => (b.billType || 'fixed') === 'variable' && b.paid)) {
       if (!byName[b.name]) byName[b.name] = []
       byName[b.name].push(b.amount)
     }
@@ -54,11 +59,11 @@ export default function Bills() {
       name, avg: amounts.reduce((s, a) => s + a, 0) / amounts.length,
       min: Math.min(...amounts), max: Math.max(...amounts),
     }))
-  }, [data.bills])
+  }, [bills])
 
-  const overdueCount = data.bills.filter(b => !b.paid && !b.noDueDate && daysUntil(b.dueDate) < 0).length
-  const dueSoonCount = data.bills.filter(b => !b.paid && !b.noDueDate && daysUntil(b.dueDate) >= 0 && daysUntil(b.dueDate) <= 7).length
-  const totalPending = data.bills.filter(b => !b.paid).reduce((s, b) => s + b.amount, 0)
+  const overdueCount = bills.filter(b => !b.paid && !b.noDueDate && daysUntil(b.dueDate) < 0).length
+  const dueSoonCount = bills.filter(b => !b.paid && !b.noDueDate && daysUntil(b.dueDate) >= 0 && daysUntil(b.dueDate) <= 7).length
+  const totalPending = bills.filter(b => !b.paid).reduce((s, b) => s + b.amount, 0)
 
   function openAdd() { setEditing(null); setForm(emptyForm); setShowForm(true) }
   function openEdit(b: Bill) {
@@ -186,7 +191,7 @@ export default function Bills() {
                   <tr key={b.id} className="hover:bg-[var(--bg-hover)] transition-colors">
                     <td className="table-cell">
                       {!b.paid && (
-                        <button onClick={() => { setPayBill(b); setPayAccountId(b.accountId || data.accounts[0]?.id || '') }}
+                        <button onClick={() => { setPayBill(b); setPayAccountId(b.accountId || accounts[0]?.id || '') }}
                           className="w-5 h-5 rounded border-2 flex items-center justify-center transition-colors" style={{ borderColor: 'var(--border)' }}>
                         </button>
                       )}
@@ -205,7 +210,7 @@ export default function Bills() {
                     <td className="table-cell text-right font-semibold t-primary">{formatCurrency(b.amount, cur)}</td>
                     <td className="table-cell">
                       <div className="flex gap-0.5 justify-end">
-                        {!b.paid && <button onClick={() => { setPayBill(b); setPayAccountId(b.accountId || data.accounts[0]?.id || '') }} className="p-1 t-muted hover:text-[var(--success)]" title="Pay"><CreditCard size={13} /></button>}
+                        {!b.paid && <button onClick={() => { setPayBill(b); setPayAccountId(b.accountId || accounts[0]?.id || '') }} className="p-1 t-muted hover:text-[var(--success)]" title="Pay"><CreditCard size={13} /></button>}
                         {b.paid && <button onClick={() => handleUnpay(b)} className="p-1 t-muted hover:text-[var(--warning)]" title="Revert payment"><Undo2 size={13} /></button>}
                         <button onClick={() => openEdit(b)} className="p-1 t-muted hover:t-accent"><Pencil size={13} /></button>
                         <button onClick={() => setDeleteId(b.id)} className="p-1 t-muted hover:text-[var(--danger)]"><Trash2 size={13} /></button>
@@ -226,7 +231,7 @@ export default function Bills() {
           <FormField label="Pay from account">
             <select className="input" value={payAccountId} onChange={e => setPayAccountId(e.target.value)}>
               <option value="">Select account</option>
-              {data.accounts.map(a => <option key={a.id} value={a.id}>{a.name} ({formatCurrency(a.balance, cur)})</option>)}
+              {accounts.map(a => <option key={a.id} value={a.id}>{a.name} ({formatCurrency(a.balance, cur)})</option>)}
             </select>
           </FormField>
           <p className="text-[11px] t-muted mb-4">This will mark the bill as paid, create an expense transaction, and deduct from the selected account.</p>
@@ -279,7 +284,7 @@ export default function Bills() {
           <FormField label="Pay from (optional)">
             <select className="input" value={form.accountId} onChange={e => setForm(f => ({ ...f, accountId: e.target.value }))}>
               <option value="">None</option>
-              {data.accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+              {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
             </select>
           </FormField>
           <FormField label="Notes (optional)">

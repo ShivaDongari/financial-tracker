@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import { StoreProvider } from './store'
+import { useEffect } from 'react'
+import { Routes, Route, Navigate } from 'react-router-dom'
+import { useStore } from './store'
 import Layout from './components/Layout'
 import Dashboard from './components/Dashboard'
 import Accounts from './components/Accounts'
@@ -12,29 +13,26 @@ import DetailedAssets from './components/DetailedAssets'
 import AllMonthsIncome from './components/AllMonthsIncome'
 import DetailedLoans from './components/DetailedLoans'
 
-export type Tab = 'dashboard' | 'accounts' | 'transactions' | 'bills' | 'scanner' | 'settings' | 'subscriptions' | 'detailed-assets' | 'all-months-income' | 'detailed-loans'
-
 export default function App() {
-  const [tab, setTab] = useState<Tab>('dashboard')
+  const refresh = useStore(s => s.refresh)
 
-  const content: Record<Tab, React.ReactNode> = {
-    dashboard: <Dashboard onNavigate={setTab} />,
-    accounts: <Accounts />,
-    transactions: <Transactions />,
-    bills: <Bills />,
-    subscriptions: <Subscriptions />,
-    scanner: <Scanner onSaved={() => setTab('transactions')} />,
-    settings: <Settings />,
-    'detailed-assets': <DetailedAssets onBack={() => setTab('dashboard')} />,
-    'all-months-income': <AllMonthsIncome onBack={() => setTab('dashboard')} />,
-    'detailed-loans': <DetailedLoans onBack={() => setTab('dashboard')} />,
-  }
+  useEffect(() => { refresh() }, [refresh])
 
   return (
-    <StoreProvider>
-      <Layout tab={tab} onTabChange={setTab}>
-        {content[tab]}
-      </Layout>
-    </StoreProvider>
+    <Layout>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/accounts" element={<Accounts />} />
+        <Route path="/transactions" element={<Transactions />} />
+        <Route path="/bills" element={<Bills />} />
+        <Route path="/subscriptions" element={<Subscriptions />} />
+        <Route path="/scan" element={<Scanner />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="/assets" element={<DetailedAssets />} />
+        <Route path="/income-history" element={<AllMonthsIncome />} />
+        <Route path="/loans" element={<DetailedLoans />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Layout>
   )
 }

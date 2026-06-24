@@ -2,32 +2,31 @@ import { useState, useRef } from 'react'
 import { useStore } from '../store'
 import { Save, User, Download, Upload, CheckCircle, AlertCircle, ScanLine, Moon, Sun } from 'lucide-react'
 import { api } from '../utils/api'
-import { exportData, importData } from '../utils/helpers'
 import { FormField } from './Accounts'
 
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'INR', 'CAD', 'AUD', 'JPY', 'SGD', 'AED']
 
 export default function Settings() {
-  const { data, dispatch, refresh } = useStore()
+  const settings = useStore(s => s.settings)
+  const updateSettings = useStore(s => s.updateSettings)
+  const refresh = useStore(s => s.refresh)
   const [saved, setSaved] = useState(false)
   const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const fileRef = useRef<HTMLInputElement>(null)
-  const [form, setForm] = useState({ name: data.settings.name, currency: data.settings.currency })
+  const [form, setForm] = useState({ name: settings.name, currency: settings.currency })
 
   async function save() {
-    const updated = await api.updateSettings(form)
-    dispatch({ type: 'SET_SETTINGS', payload: { ...data.settings, ...updated } })
+    await updateSettings(form)
     setSaved(true); setTimeout(() => setSaved(false), 2000)
   }
 
   async function toggleDark() {
-    const dm = !data.settings.darkMode
-    const updated = await api.updateSettings({ darkMode: dm })
-    dispatch({ type: 'SET_SETTINGS', payload: { ...data.settings, ...updated, darkMode: dm } })
+    const dm = !settings.darkMode
+    await updateSettings({ darkMode: dm })
   }
 
-  function handleExport() {
-    const json = exportData()
+  async function handleExport() {
+    const json = await api.exportAll()
     const blob = new Blob([json], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a'); a.href = url
@@ -35,19 +34,22 @@ export default function Settings() {
     a.click(); URL.revokeObjectURL(url)
   }
 
-  function handleImport(file: File) {
+  async function handleImport(file: File) {
     const reader = new FileReader()
     reader.onload = async (e) => {
-      if (importData(e.target?.result as string)) {
+      try {
+        await api.importAll(e.target?.result as string)
         setImportStatus('success'); await refresh()
-        setForm({ name: data.settings.name, currency: data.settings.currency })
+        setForm({ name: settings.name, currency: settings.currency })
         setTimeout(() => setImportStatus('idle'), 3000)
-      } else { setImportStatus('error'); setTimeout(() => setImportStatus('idle'), 3000) }
+      } catch {
+        setImportStatus('error'); setTimeout(() => setImportStatus('idle'), 3000)
+      }
     }
     reader.readAsText(file)
   }
 
-  const isDark = !!data.settings.darkMode
+  const isDark = !!settings.darkMode
 
   return (
     <div className="p-4 lg:p-6 space-y-4 pb-24 lg:pb-6 max-w-2xl">

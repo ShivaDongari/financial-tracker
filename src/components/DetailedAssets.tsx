@@ -1,13 +1,14 @@
 import { ArrowLeft, Landmark, Wallet, TrendingUp } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store'
 import { formatCurrency } from '../utils/helpers'
 
-interface Props { onBack: () => void }
-
-export default function DetailedAssets({ onBack }: Props) {
-  const { data } = useStore()
-  const cur = data.settings.currency
-  const assets = data.accounts.filter(a => a.type === 'bank' || a.type === 'cash' || a.type === 'income')
+export default function DetailedAssets() {
+  const navigate = useNavigate()
+  const accounts = useStore(s => s.accounts)
+  const settings = useStore(s => s.settings)
+  const cur = settings.currency
+  const assets = accounts.filter(a => a.type === 'bank' || a.type === 'cash' || a.type === 'income')
   const total = assets.reduce((s, a) => s + a.balance, 0)
 
   const icons = { bank: Landmark, cash: Wallet, income: TrendingUp } as const
@@ -15,7 +16,7 @@ export default function DetailedAssets({ onBack }: Props) {
   return (
     <div className="p-4 lg:p-6 space-y-4 pb-24 lg:pb-6">
       <div className="flex items-center gap-3 pt-2">
-        <button onClick={onBack} className="p-2 rounded-xl hover:bg-[var(--bg-hover)] transition-colors t-secondary">
+        <button onClick={() => navigate('/')} className="p-2 rounded-xl hover:bg-[var(--bg-hover)] transition-colors t-secondary">
           <ArrowLeft size={20} />
         </button>
         <div>
