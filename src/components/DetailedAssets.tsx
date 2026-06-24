@@ -48,7 +48,7 @@ export default function DetailedAssets({ onBack }: Props) {
                 <div key={a.id} className="card-hover">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white">
+                      <div className="w-9 h-9 rounded-xl bg-[var(--success)] flex items-center justify-center text-white">
                         <Icon size={16} />
                       </div>
                       <div>
@@ -66,8 +66,8 @@ export default function DetailedAssets({ onBack }: Props) {
       })}
 
       {total > 0 && (
-        <div className="card bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950/30 dark:to-green-950/30">
-          <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-2">Asset Breakdown</p>
+        <div className="card bg-[var(--success-light)]">
+          <p className="text-xs font-semibold text-[var(--success)] mb-2">Asset Breakdown</p>
           {(['bank', 'cash', 'income'] as const).map(type => {
             const sub = assets.filter(a => a.type === type).reduce((s, a) => s + a.balance, 0)
             if (!sub) return null
@@ -75,12 +75,12 @@ export default function DetailedAssets({ onBack }: Props) {
             const labels = { bank: 'Bank', cash: 'Cash', income: 'Income' }
             return (
               <div key={type} className="flex items-center justify-between py-1.5">
-                <span className="text-xs text-emerald-600 dark:text-emerald-400">{labels[type]}</span>
+                <span className="text-xs text-[var(--success)]">{labels[type]}</span>
                 <div className="flex items-center gap-2">
-                  <div className="w-24 h-2 rounded-full bg-emerald-200 dark:bg-emerald-900 overflow-hidden">
-                    <div className="h-full rounded-full bg-emerald-500" style={{ width: `${pct}%` }} />
+                  <div className="w-24 h-2 rounded-full bg-[var(--bg-hover)] overflow-hidden">
+                    <div className="h-full rounded-full bg-[var(--success)]" style={{ width: `${pct}%` }} />
                   </div>
-                  <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 w-12 text-right">{pct}%</span>
+                  <span className="text-xs font-semibold text-[var(--success)] w-12 text-right">{pct}%</span>
                 </div>
               </div>
             )

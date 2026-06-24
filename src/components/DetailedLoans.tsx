@@ -24,12 +24,12 @@ export default function DetailedLoans({ onBack }: Props) {
     const available = Math.max(0, limit - a.balance)
     const usage = limit > 0 ? ((a.balance / limit) * 100) : 0
     const usageColor = usage > 70 ? 'text-rose-500' : usage > 40 ? 'text-amber-500' : 'text-emerald-500'
-    const barColor = usage > 70 ? 'bg-rose-500' : usage > 40 ? 'bg-amber-500' : 'bg-emerald-500'
+    const barColor = usage > 70 ? 'bg-rose-500' : usage > 40 ? 'bg-amber-500' : 'bg-[var(--success)]'
 
     return (
       <div className="card-hover" key={a.id}>
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white">
+          <div className="w-9 h-9 rounded-xl bg-[var(--accent)] flex items-center justify-center text-white">
             <CreditCard size={16} />
           </div>
           <div className="flex-1">
@@ -64,7 +64,7 @@ export default function DetailedLoans({ onBack }: Props) {
     return (
       <div className="card-hover" key={a.id}>
         <div className="flex items-center gap-3 mb-2">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center text-white">
+          <div className="w-9 h-9 rounded-xl bg-[var(--danger)] flex items-center justify-center text-white">
             <BadgeDollarSign size={16} />
           </div>
           <div className="flex-1">
@@ -83,7 +83,7 @@ export default function DetailedLoans({ onBack }: Props) {
               <span className="text-emerald-600 font-semibold">{payoff.toFixed(0)}% paid off</span>
             </div>
             <div className="w-full h-2 rounded-full bg-[var(--bg-hover)] overflow-hidden">
-              <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${payoff}%` }} />
+              <div className="h-full rounded-full bg-[var(--success)] transition-all" style={{ width: `${payoff}%` }} />
             </div>
           </div>
         )}

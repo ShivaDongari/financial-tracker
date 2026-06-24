@@ -57,7 +57,6 @@ export interface Transaction {
 
 export type BillFrequency = 'once' | 'weekly' | 'monthly' | 'quarterly' | 'yearly'
 export type BillType = 'fixed' | 'variable'
-export type BillStatus = 'scheduled' | 'due' | 'overdue' | 'paid'
 
 export interface Bill {
   id: string
@@ -70,6 +69,20 @@ export interface Bill {
   accountId?: string
   category: Category
   paid: boolean
+  paidDate?: string
+  notes?: string
+  createdAt: string
+}
+
+export interface Subscription {
+  id: string
+  name: string
+  amount: number
+  frequency: 'monthly' | 'quarterly' | 'yearly'
+  nextRenewal: string
+  category: Category
+  accountId?: string
+  active: boolean
   notes?: string
   createdAt: string
 }
@@ -78,6 +91,7 @@ export interface AppSettings {
   currency: string
   name: string
   darkMode?: boolean
+  selectedMonth?: string // YYYY-MM format
 }
 
 export interface DashboardData {
@@ -92,4 +106,5 @@ export interface DashboardData {
   upcomingCount: number
   dueSoonCount: number
   overdueCount: number
+  paidCount: number
 }

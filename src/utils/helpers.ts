@@ -3,41 +3,61 @@ export function generateId(): string {
 }
 
 export function formatCurrency(amount: number, currency = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: 2,
-  }).format(amount)
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency, minimumFractionDigits: 2 }).format(amount)
+}
+
+// Use local date parsing to avoid timezone bugs (YYYY-MM-DD → local date)
+function parseLocalDate(dateStr: string): Date {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  return new Date(y, m - 1, d)
 }
 
 export function formatDate(dateStr: string): string {
-  const d = new Date(dateStr)
+  if (!dateStr) return ''
+  const d = parseLocalDate(dateStr)
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 export function formatDateShort(dateStr: string): string {
-  const d = new Date(dateStr)
+  if (!dateStr) return ''
+  const d = parseLocalDate(dateStr)
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
 export function todayISO(): string {
-  return new Date().toISOString().split('T')[0]
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-export function currentMonthName(): string {
-  return new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+export function currentMonthKey(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+export function monthKeyToLabel(key: string): string {
+  const [y, m] = key.split('-').map(Number)
+  return new Date(y, m - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 }
 
 export function todayFormatted(): string {
-  return new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+  const d = new Date()
+  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
 }
 
 export function daysUntil(dateStr: string): number {
+  if (!dateStr) return 0
   const today = new Date()
   today.setHours(0, 0, 0, 0)
-  const target = new Date(dateStr)
-  target.setHours(0, 0, 0, 0)
+  const target = parseLocalDate(dateStr)
   return Math.round((target.getTime() - today.getTime()) / 86400000)
+}
+
+export function getMonthStartEnd(monthKey: string): { start: string; end: string } {
+  const [y, m] = monthKey.split('-').map(Number)
+  const start = `${y}-${String(m).padStart(2, '0')}-01`
+  const lastDay = new Date(y, m, 0).getDate()
+  const end = `${y}-${String(m).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
+  return { start, end }
 }
 
 export function getWeekRange(): { start: string; end: string } {
@@ -48,46 +68,36 @@ export function getWeekRange(): { start: string; end: string } {
   start.setHours(0, 0, 0, 0)
   const end = new Date(start)
   end.setDate(start.getDate() + 6)
-  return { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] }
+  const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  return { start: fmt(start), end: fmt(end) }
 }
 
-export function getMonthRange(): { start: string; end: string } {
-  const now = new Date()
-  const start = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
-  const next = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-  const end = next.toISOString().split('T')[0]
-  return { start, end }
+export function prevMonth(key: string): string {
+  const [y, m] = key.split('-').map(Number)
+  const d = new Date(y, m - 2, 1)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 
-export function getSpendingEmoji(amount: number, budget: number): string {
-  if (budget <= 0) return ''
-  const ratio = amount / budget
-  if (ratio < 0.3) return '🟢'
-  if (ratio < 0.6) return '🫡'
-  if (ratio < 0.85) return '😬'
-  if (ratio < 1) return '🔥'
-  return '💀'
+export function nextMonth(key: string): string {
+  const [y, m] = key.split('-').map(Number)
+  const d = new Date(y, m, 1)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 
 export function getFunInsight(weeklySpend: number, monthlySpend: number, topCategory: string, dailyAvg: number, currency: string): string[] {
   const insights: string[] = []
-  if (dailyAvg > 0) {
-    insights.push(`You're spending ${formatCurrency(dailyAvg, currency)}/day this month — that's ${formatCurrency(dailyAvg * 365, currency)}/year.`)
-  }
+  if (dailyAvg > 0) insights.push(`Averaging ${formatCurrency(dailyAvg, currency)}/day this month.`)
   if (topCategory) {
     const quips: Record<string, string> = {
-      'Household': 'Adulting is expensive. Your house agrees.',
-      'Car': 'Your car is eating well this month.',
-      'Personal': 'Self-care isn\'t cheap, but you\'re worth it.',
-      'Entertainment': 'Living your best life, one subscription at a time.',
-      'Education': 'Investing in your brain. Smart move.',
-      'Loans / Debt Service': 'Paying off debt like a boss.',
-      'Subscription': 'The subscriptions are multiplying...',
+      'Household': 'Household leads your spending this month.',
+      'Car': 'Automotive costs are your top expense.',
+      'Personal': 'Personal spending tops the chart.',
+      'Entertainment': 'Entertainment is your biggest category.',
+      'Education': 'Education is your top investment.',
+      'Loans / Debt Service': 'Debt payments lead your outflows.',
+      'Subscription': 'Subscriptions are your top recurring cost.',
     }
-    insights.push(quips[topCategory] || `${topCategory} is your top spend.`)
-  }
-  if (weeklySpend === 0) {
-    insights.push('Zero spent this week? Either you\'re a monk or forgot to log.')
+    insights.push(quips[topCategory] || `${topCategory} is your top category.`)
   }
   return insights
 }
@@ -102,12 +112,10 @@ export async function compressImage(file: File, maxPx = 1024, quality = 0.8): Pr
       const w = Math.round(img.width * scale)
       const h = Math.round(img.height * scale)
       const canvas = document.createElement('canvas')
-      canvas.width = w
-      canvas.height = h
+      canvas.width = w; canvas.height = h
       const ctx = canvas.getContext('2d')!
       ctx.drawImage(img, 0, 0, w, h)
-      const dataUrl = canvas.toDataURL('image/jpeg', quality)
-      resolve(dataUrl.split(',')[1])
+      resolve(canvas.toDataURL('image/jpeg', quality).split(',')[1])
     }
     img.onerror = reject
     img.src = url
@@ -115,8 +123,7 @@ export async function compressImage(file: File, maxPx = 1024, quality = 0.8): Pr
 }
 
 export function exportData(): string {
-  const raw = localStorage.getItem('finance_tracker_v2')
-  return raw || '{}'
+  return localStorage.getItem('finance_tracker_v2') || '{}'
 }
 
 export function importData(json: string): boolean {
@@ -127,12 +134,10 @@ export function importData(json: string): boolean {
       return true
     }
     return false
-  } catch {
-    return false
-  }
+  } catch { return false }
 }
 
-export function getMonthlyBreakdown(transactions: { type: string; amount: number; date: string }[], type: 'income' | 'expense'): { month: string; total: number }[] {
+export function getMonthlyBreakdown(transactions: { type: string; amount: number; date: string }[], type: 'income' | 'expense'): { month: string; monthKey: string; total: number }[] {
   const map: Record<string, number> = {}
   for (const t of transactions.filter(t => t.type === type)) {
     const key = t.date.slice(0, 7)
@@ -140,8 +145,5 @@ export function getMonthlyBreakdown(transactions: { type: string; amount: number
   }
   return Object.entries(map)
     .sort(([a], [b]) => b.localeCompare(a))
-    .map(([month, total]) => {
-      const d = new Date(month + '-01')
-      return { month: d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }), total }
-    })
+    .map(([key, total]) => ({ month: monthKeyToLabel(key), monthKey: key, total }))
 }
