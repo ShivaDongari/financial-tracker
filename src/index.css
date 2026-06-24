@@ -9,8 +9,42 @@
 }
 
 body {
-  @apply bg-slate-50 text-slate-800;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+:root {
+  --bg-primary: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-input: #ffffff;
+  --bg-hover: #f1f5f9;
+  --bg-nav: #ffffff;
+  --border: #e2e8f0;
+  --border-card: #f1f5f9;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+  --shadow-card: 0 1px 3px rgba(0,0,0,.04);
+  --shadow-hover: 0 4px 12px rgba(0,0,0,.06);
+}
+
+.dark {
+  --bg-primary: #0f172a;
+  --bg-card: #1e293b;
+  --bg-input: #334155;
+  --bg-hover: #334155;
+  --bg-nav: #1e293b;
+  --border: #334155;
+  --border-card: #334155;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --shadow-card: 0 1px 3px rgba(0,0,0,.2);
+  --shadow-hover: 0 4px 12px rgba(0,0,0,.3);
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 .pb-safe {
@@ -19,7 +53,10 @@ body {
 
 @layer components {
   .input {
-    @apply w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent bg-white transition-shadow;
+    @apply w-full rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-shadow;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
   }
 
   .btn-primary {
@@ -27,14 +64,29 @@ body {
   }
 
   .btn-secondary {
-    @apply bg-slate-100 text-slate-700 rounded-2xl py-3 text-sm font-semibold hover:bg-slate-200 transition-colors;
+    @apply rounded-2xl py-3 text-sm font-semibold transition-colors;
+    background: var(--bg-hover);
+    color: var(--text-primary);
   }
 
   .card {
-    @apply bg-white rounded-2xl border border-slate-100 p-4 shadow-sm;
+    @apply rounded-2xl p-4;
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    box-shadow: var(--shadow-card);
   }
 
   .card-hover {
-    @apply card hover:shadow-md transition-shadow;
+    @apply card transition-shadow;
   }
+  .card-hover:hover {
+    box-shadow: var(--shadow-hover);
+  }
+
+  .t-primary { color: var(--text-primary); }
+  .t-secondary { color: var(--text-secondary); }
+  .t-muted { color: var(--text-muted); }
+  .bg-page { background: var(--bg-primary); }
+  .bg-nav { background: var(--bg-nav); }
+  .border-theme { border-color: var(--border); }
 }

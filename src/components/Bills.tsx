@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Pencil, Trash2, CalendarClock, Check } from 'lucide-react'
+import { Plus, Pencil, Trash2, CalendarClock, Check, MinusCircle } from 'lucide-react'
 import { useStore } from '../store'
 import { Bill, BillFrequency, CATEGORIES, Category } from '../types'
 import { formatCurrency, formatDate, daysUntil, todayISO } from '../utils/helpers'
@@ -11,7 +11,7 @@ const FREQ_LABELS: Record<BillFrequency, string> = {
 }
 
 const emptyForm = {
-  name: '', amount: '', dueDate: todayISO(), frequency: 'monthly' as BillFrequency,
+  name: '', amount: '', dueDate: todayISO(), noDueDate: false, frequency: 'monthly' as BillFrequency,
   accountId: '', category: 'Household' as Category, paid: false, notes: '',
 }
 
@@ -24,21 +24,25 @@ export default function Bills() {
   const [showPaid, setShowPaid] = useState(false)
   const cur = data.settings.currency
 
-  const upcoming = data.bills.filter(b => !b.paid).sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+  const upcoming = data.bills.filter(b => !b.paid && !b.noDueDate).sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+  const noDueDateBills = data.bills.filter(b => !b.paid && b.noDueDate)
   const paid = data.bills.filter(b => b.paid).sort((a, b) => b.dueDate.localeCompare(a.dueDate))
 
   function openAdd() { setEditing(null); setForm(emptyForm); setShowForm(true) }
 
   function openEdit(b: Bill) {
     setEditing(b)
-    setForm({ name: b.name, amount: String(b.amount), dueDate: b.dueDate, frequency: b.frequency, accountId: b.accountId || '', category: b.category, paid: b.paid, notes: b.notes || '' })
+    setForm({ name: b.name, amount: String(b.amount), dueDate: b.dueDate, noDueDate: !!b.noDueDate, frequency: b.frequency, accountId: b.accountId || '', category: b.category, paid: b.paid, notes: b.notes || '' })
     setShowForm(true)
   }
 
   async function save() {
-    const payload = {
-      name: form.name.trim(), amount: parseFloat(form.amount) || 0, dueDate: form.dueDate,
-      frequency: form.frequency, accountId: form.accountId || undefined, category: form.category,
+    const payload: any = {
+      name: form.name.trim(), amount: parseFloat(form.amount) || 0,
+      dueDate: form.noDueDate ? '' : form.dueDate,
+      noDueDate: form.noDueDate,
+      frequency: form.noDueDate ? 'once' : form.frequency,
+      accountId: form.accountId || undefined, category: form.category,
       paid: form.paid, notes: form.notes.trim(),
     }
     if (!payload.name) return
@@ -64,8 +68,8 @@ export default function Bills() {
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between pt-2">
         <div>
-          <h1 className="text-xl font-extrabold text-slate-900">Bills</h1>
-          <p className="text-xs text-slate-400">{upcoming.length} upcoming · {paid.length} paid</p>
+          <h1 className="text-xl font-extrabold t-primary">Bills</h1>
+          <p className="text-xs t-muted">{upcoming.length + noDueDateBills.length} pending · {paid.length} paid</p>
         </div>
         <button onClick={openAdd} className="flex items-center gap-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl px-3.5 py-2 text-sm font-semibold shadow-sm">
           <Plus size={16} /> Add
@@ -73,23 +77,45 @@ export default function Bills() {
       </div>
 
       {data.bills.length === 0 && (
-        <div className="text-center py-16 text-slate-400">
+        <div className="text-center py-16 t-muted">
           <div className="text-4xl mb-3">🧾</div>
-          <p className="font-semibold text-slate-600">No bills yet</p>
+          <p className="font-semibold t-secondary">No bills yet</p>
           <p className="text-sm mt-1">Add recurring bills to never miss a due date</p>
         </div>
       )}
 
       {upcoming.length > 0 && (
         <div className="space-y-2">
-          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Upcoming</p>
+          <p className="text-[10px] font-semibold t-muted uppercase tracking-wider">Upcoming</p>
           {upcoming.map(b => <BillRow key={b.id} bill={b} cur={cur} onEdit={openEdit} onDelete={setDeleteId} onToggle={togglePaid} />)}
+        </div>
+      )}
+
+      {noDueDateBills.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-[10px] font-semibold t-muted uppercase tracking-wider">No Due Date</p>
+          {noDueDateBills.map(b => (
+            <div key={b.id} className="card-hover flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <button onClick={() => togglePaid(b)} className="w-7 h-7 rounded-full border-2 border-slate-300 dark:border-slate-600 flex items-center justify-center" />
+                <div>
+                  <p className="text-sm font-semibold t-primary">{b.name}</p>
+                  <p className="text-[11px] t-muted">{b.category} · One-time · No deadline</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-bold t-primary">{formatCurrency(b.amount, cur)}</p>
+                <button onClick={() => openEdit(b)} className="p-1.5 t-muted hover:text-violet-600 rounded-lg"><Pencil size={13} /></button>
+                <button onClick={() => setDeleteId(b.id)} className="p-1.5 t-muted hover:text-rose-500 rounded-lg"><Trash2 size={13} /></button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
       {paid.length > 0 && (
         <div className="space-y-2">
-          <button onClick={() => setShowPaid(!showPaid)} className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+          <button onClick={() => setShowPaid(!showPaid)} className="text-[10px] font-semibold t-muted uppercase tracking-wider flex items-center gap-1">
             Paid ({paid.length}) {showPaid ? '▲' : '▼'}
           </button>
           {showPaid && paid.map(b => <BillRow key={b.id} bill={b} cur={cur} onEdit={openEdit} onDelete={setDeleteId} onToggle={togglePaid} />)}
@@ -97,21 +123,32 @@ export default function Bills() {
       )}
 
       {showForm && (
-        <Modal title={editing ? 'Edit Bill' : 'Add Bill'} onClose={() => setShowForm(false)}>
+        <Modal title={editing ? 'Edit Bill' : 'Add Bill'} onClose={() => setShowForm(false)} onSubmit={save}>
           <FormField label="Bill Name">
             <input className="input" placeholder="e.g. Electricity" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
           </FormField>
           <FormField label="Amount">
             <input className="input" type="number" step="0.01" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} />
           </FormField>
-          <FormField label="Due Date">
-            <input className="input" type="date" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} />
-          </FormField>
-          <FormField label="Frequency">
-            <select className="input" value={form.frequency} onChange={e => setForm(f => ({ ...f, frequency: e.target.value as BillFrequency }))}>
-              {Object.entries(FREQ_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-            </select>
-          </FormField>
+
+          <div className="flex items-center gap-2 mb-3">
+            <input type="checkbox" id="noDueDate" checked={form.noDueDate} onChange={e => setForm(f => ({ ...f, noDueDate: e.target.checked }))} className="rounded" />
+            <label htmlFor="noDueDate" className="text-sm t-secondary">No due date</label>
+          </div>
+
+          {!form.noDueDate && (
+            <>
+              <FormField label="Due Date">
+                <input className="input" type="date" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} />
+              </FormField>
+              <FormField label="Frequency">
+                <select className="input" value={form.frequency} onChange={e => setForm(f => ({ ...f, frequency: e.target.value as BillFrequency }))}>
+                  {Object.entries(FREQ_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                </select>
+              </FormField>
+            </>
+          )}
+
           <FormField label="Category">
             <select className="input" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value as Category }))}>
               {CATEGORIES.map(c => <option key={c}>{c}</option>)}
@@ -128,11 +165,11 @@ export default function Bills() {
           </FormField>
           <div className="flex items-center gap-2 mb-4">
             <input type="checkbox" id="paid" checked={form.paid} onChange={e => setForm(f => ({ ...f, paid: e.target.checked }))} className="rounded" />
-            <label htmlFor="paid" className="text-sm text-slate-600">Mark as paid</label>
+            <label htmlFor="paid" className="text-sm t-secondary">Mark as paid</label>
           </div>
           <div className="flex gap-2">
-            <button onClick={() => setShowForm(false)} className="flex-1 btn-secondary">Cancel</button>
-            <button onClick={save} className="flex-1 btn-primary">Save</button>
+            <button type="button" onClick={() => setShowForm(false)} className="flex-1 btn-secondary">Cancel</button>
+            <button type="submit" className="flex-1 btn-primary">Save</button>
           </div>
         </Modal>
       )}
@@ -151,26 +188,27 @@ export default function Bills() {
 }
 
 function BillRow({ bill, cur, onEdit, onDelete, onToggle }: { bill: Bill; cur: string; onEdit: (b: Bill) => void; onDelete: (id: string) => void; onToggle: (b: Bill) => void }) {
-  const days = daysUntil(bill.dueDate)
-  const overdue = days < 0
-  const urgent = days >= 0 && days <= 3
+  const days = bill.noDueDate ? null : daysUntil(bill.dueDate)
+  const overdue = days !== null && days < 0
+  const urgent = days !== null && days >= 0 && days <= 3
   return (
-    <div className={`card-hover flex items-center justify-between ${overdue ? '!border-rose-200' : ''}`}>
+    <div className={`card-hover flex items-center justify-between ${overdue ? '!border-rose-300 dark:!border-rose-800' : ''}`}>
       <div className="flex items-center gap-3">
-        <button onClick={() => onToggle(bill)} className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all ${bill.paid ? 'bg-emerald-500 border-emerald-500' : overdue ? 'border-rose-400' : urgent ? 'border-amber-400' : 'border-slate-300'}`}>
+        <button onClick={() => onToggle(bill)} className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all ${bill.paid ? 'bg-emerald-500 border-emerald-500' : overdue ? 'border-rose-400' : urgent ? 'border-amber-400' : 'border-slate-300 dark:border-slate-600'}`}>
           {bill.paid && <Check size={14} className="text-white" />}
         </button>
         <div>
-          <p className={`text-sm font-semibold ${bill.paid ? 'text-slate-400 line-through' : 'text-slate-800'}`}>{bill.name}</p>
-          <p className={`text-[11px] ${overdue ? 'text-rose-500 font-medium' : urgent ? 'text-amber-500' : 'text-slate-400'}`}>
-            {bill.paid ? 'Paid' : overdue ? `${Math.abs(days)}d overdue` : days === 0 ? 'Due today!' : `Due in ${days}d`} · {formatDate(bill.dueDate)}
+          <p className={`text-sm font-semibold ${bill.paid ? 't-muted line-through' : 't-primary'}`}>{bill.name}</p>
+          <p className={`text-[11px] ${overdue ? 'text-rose-500 font-medium' : urgent ? 'text-amber-500' : 't-muted'}`}>
+            {bill.paid ? 'Paid' : bill.noDueDate ? 'No deadline' : overdue ? `${Math.abs(days!)}d overdue` : days === 0 ? 'Due today!' : `Due in ${days}d`}
+            {!bill.noDueDate && bill.dueDate ? ` · ${formatDate(bill.dueDate)}` : ''}
           </p>
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <p className="text-sm font-bold text-slate-800">{formatCurrency(bill.amount, cur)}</p>
-        <button onClick={() => onEdit(bill)} className="p-1.5 text-slate-400 hover:text-violet-600 rounded-lg"><Pencil size={13} /></button>
-        <button onClick={() => onDelete(bill.id)} className="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg"><Trash2 size={13} /></button>
+        <p className="text-sm font-bold t-primary">{formatCurrency(bill.amount, cur)}</p>
+        <button onClick={() => onEdit(bill)} className="p-1.5 t-muted hover:text-violet-600 rounded-lg"><Pencil size={13} /></button>
+        <button onClick={() => onDelete(bill.id)} className="p-1.5 t-muted hover:text-rose-500 rounded-lg"><Trash2 size={13} /></button>
       </div>
     </div>
   )

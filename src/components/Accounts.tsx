@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, KeyboardEvent } from 'react'
 import { Plus, Pencil, Trash2, Landmark, Wallet, CreditCard, BadgeDollarSign, TrendingUp, X, LucideIcon } from 'lucide-react'
 import { useStore } from '../store'
 import { Account, AccountType } from '../types'
@@ -89,8 +89,8 @@ export default function Accounts() {
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between pt-2">
         <div>
-          <h1 className="text-xl font-extrabold text-slate-900">Accounts</h1>
-          <p className="text-xs text-slate-400">Your money lives here</p>
+          <h1 className="text-xl font-extrabold t-primary">Accounts</h1>
+          <p className="text-xs t-muted">Your money lives here</p>
         </div>
         <button onClick={openAdd} className="flex items-center gap-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl px-3.5 py-2 text-sm font-semibold shadow-sm">
           <Plus size={16} /> Add
@@ -98,9 +98,9 @@ export default function Accounts() {
       </div>
 
       {data.accounts.length === 0 && (
-        <div className="text-center py-16 text-slate-400">
+        <div className="text-center py-16 t-muted">
           <div className="text-4xl mb-3">🏦</div>
-          <p className="font-semibold text-slate-600">No accounts yet</p>
+          <p className="font-semibold t-secondary">No accounts yet</p>
           <p className="text-sm mt-1">Add bank accounts, cards, loans & more</p>
         </div>
       )}
@@ -114,12 +114,17 @@ export default function Accounts() {
         return (
           <div key={type}>
             <div className="flex items-center justify-between mb-2">
-              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{TYPE_LABELS[type]}</p>
+              <p className="text-[10px] font-semibold t-muted uppercase tracking-wider">{TYPE_LABELS[type]}</p>
               <p className={`text-xs font-bold ${isDebt ? 'text-rose-500' : 'text-emerald-600'}`}>{formatCurrency(total, cur)}</p>
             </div>
             <div className="space-y-2">
               {list.map(a => {
-                const utilization = a.type === 'credit_card' && a.creditLimit ? ((a.balance / a.creditLimit) * 100).toFixed(1) : null
+                const limit = a.creditLimit || 0
+                const available = Math.max(0, limit - a.balance)
+                const usage = limit > 0 ? (a.balance / limit) * 100 : 0
+                const usageColor = usage > 70 ? 'text-rose-500' : usage > 40 ? 'text-amber-500' : 'text-emerald-500'
+                const barColor = usage > 70 ? 'bg-rose-500' : usage > 40 ? 'bg-amber-500' : 'bg-emerald-500'
+
                 return (
                   <div key={a.id} className="card-hover">
                     <div className="flex items-center justify-between">
@@ -128,32 +133,66 @@ export default function Accounts() {
                           <Icon size={16} />
                         </div>
                         <div>
-                          <p className="text-sm font-semibold text-slate-800">{a.name}</p>
-                          {a.notes && <p className="text-[11px] text-slate-400 truncate max-w-[140px]">{a.notes}</p>}
+                          <p className="text-sm font-semibold t-primary">{a.name}</p>
+                          {a.notes && <p className="text-[11px] t-muted truncate max-w-[140px]">{a.notes}</p>}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <p className={`text-sm font-bold ${isDebt ? 'text-rose-500' : 'text-slate-800'}`}>{formatCurrency(a.balance, a.currency)}</p>
+                        <p className={`text-sm font-bold ${isDebt ? 'text-rose-500' : 't-primary'}`}>{formatCurrency(a.balance, a.currency)}</p>
                         <div className="flex gap-0.5">
-                          <button onClick={() => openEdit(a)} className="p-1.5 text-slate-400 hover:text-violet-600 rounded-lg"><Pencil size={13} /></button>
-                          <button onClick={() => setDeleteId(a.id)} className="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg"><Trash2 size={13} /></button>
+                          <button onClick={() => openEdit(a)} className="p-1.5 t-muted hover:text-violet-600 rounded-lg"><Pencil size={13} /></button>
+                          <button onClick={() => setDeleteId(a.id)} className="p-1.5 t-muted hover:text-rose-500 rounded-lg"><Trash2 size={13} /></button>
                         </div>
                       </div>
                     </div>
-                    {a.type === 'loan' && (a.interestRate != null || a.maturityDate) && (
-                      <div className="mt-2 flex gap-3 text-[11px] text-slate-500">
-                        {a.interestRate != null && <span>Rate: {a.interestRate}%/mo</span>}
-                        {a.maturityDate && <span>Maturity: {a.maturityDate}</span>}
-                        {a.originalAmount != null && (
-                          <span className="text-emerald-600 font-medium">{((1 - a.balance / a.originalAmount) * 100).toFixed(0)}% paid off</span>
-                        )}
+
+                    {a.type === 'credit_card' && limit > 0 && (
+                      <div className="mt-3 space-y-2">
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className="bg-[var(--bg-hover)] rounded-lg p-1.5 text-center">
+                            <p className="text-[9px] font-semibold t-muted uppercase">Limit</p>
+                            <p className="text-[11px] font-bold t-primary">{formatCurrency(limit, cur)}</p>
+                          </div>
+                          <div className="bg-[var(--bg-hover)] rounded-lg p-1.5 text-center">
+                            <p className="text-[9px] font-semibold t-muted uppercase">Available</p>
+                            <p className="text-[11px] font-bold text-emerald-600">{formatCurrency(available, cur)}</p>
+                          </div>
+                          <div className="bg-[var(--bg-hover)] rounded-lg p-1.5 text-center">
+                            <p className="text-[9px] font-semibold t-muted uppercase">Usage</p>
+                            <p className={`text-[11px] font-bold ${usageColor}`}>{usage.toFixed(1)}%</p>
+                          </div>
+                        </div>
+                        <div className="w-full h-1.5 rounded-full bg-[var(--bg-hover)] overflow-hidden">
+                          <div className={`h-full rounded-full ${barColor} transition-all`} style={{ width: `${Math.min(usage, 100)}%` }} />
+                        </div>
+                        {a.statementDueDay && <p className="text-[11px] t-muted">Statement due: Day {a.statementDueDay}</p>}
                       </div>
                     )}
-                    {a.type === 'credit_card' && (
-                      <div className="mt-2 flex gap-3 text-[11px] text-slate-500">
-                        {a.creditLimit != null && <span>Limit: {formatCurrency(a.creditLimit, cur)}</span>}
-                        {utilization && <span className={parseFloat(utilization) > 70 ? 'text-rose-500 font-medium' : ''}>Util: {utilization}%</span>}
+
+                    {a.type === 'credit_card' && !limit && (
+                      <div className="mt-2 flex gap-3 text-[11px] t-muted">
                         {a.statementDueDay && <span>Due: Day {a.statementDueDay}</span>}
+                        <span className="t-muted">Set credit limit for usage tracking</span>
+                      </div>
+                    )}
+
+                    {a.type === 'loan' && (a.interestRate != null || a.maturityDate) && (
+                      <div className="mt-2 space-y-1">
+                        <div className="flex gap-3 text-[11px] t-muted">
+                          {a.interestRate != null && <span>Rate: {a.interestRate}%/mo</span>}
+                          {a.maturityDate && <span>Maturity: {a.maturityDate}</span>}
+                        </div>
+                        {a.originalAmount != null && (
+                          <div>
+                            <div className="flex items-center justify-between text-[11px] mb-1">
+                              <span className="t-muted">Original: {formatCurrency(a.originalAmount, cur)}</span>
+                              <span className="text-emerald-600 font-medium">{((1 - a.balance / a.originalAmount) * 100).toFixed(0)}% paid off</span>
+                            </div>
+                            <div className="w-full h-1.5 rounded-full bg-[var(--bg-hover)] overflow-hidden">
+                              <div className="h-full rounded-full bg-emerald-500" style={{ width: `${((1 - a.balance / a.originalAmount) * 100)}%` }} />
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -165,7 +204,7 @@ export default function Accounts() {
       })}
 
       {showForm && (
-        <Modal title={editing ? 'Edit Account' : 'Add Account'} onClose={() => setShowForm(false)}>
+        <Modal title={editing ? 'Edit Account' : 'Add Account'} onClose={() => setShowForm(false)} onSubmit={save}>
           <FormField label="Account Name">
             <input className="input" placeholder="e.g. Chase Checking" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
           </FormField>
@@ -204,15 +243,15 @@ export default function Accounts() {
             <input className="input" placeholder="Any notes" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
           </FormField>
           <div className="flex gap-2 mt-4">
-            <button onClick={() => setShowForm(false)} className="flex-1 btn-secondary">Cancel</button>
-            <button onClick={save} className="flex-1 btn-primary">Save</button>
+            <button type="button" onClick={() => setShowForm(false)} className="flex-1 btn-secondary">Cancel</button>
+            <button type="submit" className="flex-1 btn-primary">Save</button>
           </div>
         </Modal>
       )}
 
       {deleteId && (
         <Modal title="Delete Account?" onClose={() => setDeleteId(null)}>
-          <p className="text-sm text-slate-500 mb-4">This will also delete all transactions for this account.</p>
+          <p className="text-sm t-secondary mb-4">This will also delete all transactions for this account.</p>
           <div className="flex gap-2">
             <button onClick={() => setDeleteId(null)} className="flex-1 btn-secondary">Cancel</button>
             <button onClick={handleDelete} className="flex-1 bg-rose-500 text-white rounded-2xl py-3 text-sm font-semibold">Delete</button>
@@ -223,16 +262,34 @@ export default function Accounts() {
   )
 }
 
-export function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+export function Modal({ title, onClose, onSubmit, children }: { title: string; onClose: () => void; onSubmit?: () => void; children: React.ReactNode }) {
+  function handleKeyDown(e: KeyboardEvent<HTMLFormElement>) {
+    if (e.key === 'Enter' && e.target instanceof HTMLInputElement && onSubmit) {
+      e.preventDefault()
+      onSubmit()
+    }
+  }
+
+  const Tag = onSubmit ? 'form' : 'div'
+  const formProps = onSubmit ? {
+    onSubmit: (e: React.FormEvent) => { e.preventDefault(); onSubmit() },
+    onKeyDown: handleKeyDown,
+  } : {}
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-white rounded-t-3xl w-full max-w-lg p-5 max-h-[90vh] overflow-y-auto shadow-xl" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
+      <Tag
+        {...(formProps as any)}
+        className="rounded-t-3xl sm:rounded-3xl w-full max-w-lg p-5 max-h-[90vh] overflow-y-auto shadow-xl"
+        style={{ background: 'var(--bg-card)' }}
+        onClick={(e: React.MouseEvent) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-bold text-slate-900">{title}</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors"><X size={20} /></button>
+          <h2 className="text-base font-bold t-primary">{title}</h2>
+          <button type="button" onClick={onClose} className="t-muted hover:t-secondary transition-colors"><X size={20} /></button>
         </div>
         {children}
-      </div>
+      </Tag>
     </div>
   )
 }
@@ -240,7 +297,7 @@ export function Modal({ title, onClose, children }: { title: string; onClose: ()
 export function FormField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="mb-3">
-      <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">{label}</label>
+      <label className="block text-[11px] font-semibold t-muted uppercase tracking-wider mb-1.5">{label}</label>
       {children}
     </div>
   )

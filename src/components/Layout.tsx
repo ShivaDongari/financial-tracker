@@ -18,20 +18,22 @@ interface Props {
 }
 
 export default function Layout({ tab, onTabChange, children }: Props) {
+  const activeMainTab = ['detailed-assets', 'all-months-income', 'detailed-loans'].includes(tab) ? 'dashboard' : tab
+
   return (
-    <div className="flex flex-col h-screen max-w-lg mx-auto bg-slate-50 shadow-lg">
+    <div className="flex flex-col h-screen w-full max-w-3xl mx-auto bg-page">
       <main className="flex-1 overflow-y-auto">{children}</main>
-      <nav className="border-t border-slate-100 bg-white pb-safe">
+      <nav className="border-t border-theme bg-nav pb-safe shrink-0">
         <div className="flex">
           {tabs.map(({ id, label, Icon }) => (
             <button
               key={id}
               onClick={() => onTabChange(id)}
               className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 text-[10px] font-medium transition-colors ${
-                tab === id ? 'text-violet-600' : 'text-slate-400'
+                activeMainTab === id ? 'text-violet-600' : 't-muted'
               }`}
             >
-              <Icon size={20} className={tab === id ? 'text-violet-600' : 'text-slate-400'} />
+              <Icon size={20} className={activeMainTab === id ? 'text-violet-600' : ''} />
               {label}
             </button>
           ))}

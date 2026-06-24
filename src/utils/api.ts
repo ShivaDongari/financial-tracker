@@ -15,7 +15,7 @@ function load(): StoredData {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) return JSON.parse(raw)
   } catch {}
-  return { accounts: [], transactions: [], bills: [], settings: { currency: 'USD', name: '' } }
+  return { accounts: [], transactions: [], bills: [], settings: { currency: 'USD', name: '', darkMode: false } }
 }
 
 function save(data: StoredData) {

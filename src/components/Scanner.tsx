@@ -84,8 +84,8 @@ export default function Scanner({ onSaved }: Props) {
     return (
       <div className="p-8 flex flex-col items-center justify-center min-h-[60vh] text-center">
         <div className="text-5xl mb-4">🎉</div>
-        <h2 className="text-xl font-extrabold text-slate-900 mb-2">Saved!</h2>
-        <p className="text-sm text-slate-500 mb-6">{lineItems.length} line item(s) logged. Your wallet says thanks.</p>
+        <h2 className="text-xl font-extrabold t-primary mb-2">Saved!</h2>
+        <p className="text-sm t-secondary mb-6">{lineItems.length} line item(s) logged. Your wallet says thanks.</p>
         <div className="flex gap-3">
           <button onClick={() => { setStep('upload'); setLineItems([]) }} className="btn-secondary px-6">Scan Another</button>
           <button onClick={onSaved} className="btn-primary px-6">View Activity</button>
@@ -100,8 +100,8 @@ export default function Scanner({ onSaved }: Props) {
         <div className="w-16 h-16 rounded-2xl bg-violet-50 flex items-center justify-center mb-4">
           <Loader2 size={32} className="text-violet-600 animate-spin" />
         </div>
-        <h2 className="text-lg font-bold text-slate-900 mb-1">Reading your receipt...</h2>
-        <p className="text-sm text-slate-400">Tesseract.js is doing its thing</p>
+        <h2 className="text-lg font-bold t-primary mb-1">Reading your receipt...</h2>
+        <p className="text-sm t-muted">Tesseract.js is doing its thing</p>
       </div>
     )
   }
@@ -111,7 +111,7 @@ export default function Scanner({ onSaved }: Props) {
       <div className="p-4 space-y-4">
         <div className="flex items-center gap-2 pt-2">
           <Edit3 size={20} className="text-violet-600" />
-          <h1 className="text-xl font-extrabold text-slate-900">Review & Split</h1>
+          <h1 className="text-xl font-extrabold t-primary">Review & Split</h1>
         </div>
 
         {form.merchant && (
@@ -122,7 +122,7 @@ export default function Scanner({ onSaved }: Props) {
 
         <div className="flex gap-2">
           {(['expense', 'income', 'transfer'] as TransactionType[]).map(t => (
-            <button key={t} onClick={() => setForm(f => ({ ...f, type: t }))} className={`flex-1 py-2.5 rounded-xl text-xs font-semibold capitalize border transition-colors ${form.type === t ? 'bg-violet-600 text-white border-violet-600' : 'border-slate-200 text-slate-500'}`}>{t}</button>
+            <button key={t} onClick={() => setForm(f => ({ ...f, type: t }))} className={`flex-1 py-2.5 rounded-xl text-xs font-semibold capitalize border transition-colors ${form.type === t ? 'bg-violet-600 text-white border-violet-600' : 'border-slate-200 t-secondary'}`}>{t}</button>
           ))}
         </div>
 
@@ -152,14 +152,14 @@ export default function Scanner({ onSaved }: Props) {
 
         <div className="card bg-slate-50 !border-slate-200 space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-slate-700">Line Items</h3>
+            <h3 className="text-sm font-semibold t-primary">Line Items</h3>
             <button onClick={addLineItem} className="flex items-center gap-1 text-xs text-violet-600 font-semibold">
               <Plus size={14} /> Add
             </button>
           </div>
 
           {lineItems.length === 0 && (
-            <p className="text-xs text-slate-400 text-center py-2">No items yet. Add to split across categories.</p>
+            <p className="text-xs t-muted text-center py-2">No items yet. Add to split across categories.</p>
           )}
 
           {lineItems.map((li, i) => (
@@ -167,7 +167,7 @@ export default function Scanner({ onSaved }: Props) {
               <div className="flex items-center gap-2">
                 <input className="input flex-1 !py-2 text-xs" placeholder="Item" value={li.description}
                   onChange={e => updateLineItem(i, { description: e.target.value })} />
-                <button onClick={() => removeLineItem(i)} className="text-slate-400 hover:text-rose-500"><Trash2 size={14} /></button>
+                <button onClick={() => removeLineItem(i)} className="t-muted hover:text-rose-500"><Trash2 size={14} /></button>
               </div>
               <div className="flex gap-2">
                 <input className="input !py-2 text-xs w-24" type="number" step="0.01" placeholder="$0.00" value={li.amount || ''}
@@ -181,7 +181,7 @@ export default function Scanner({ onSaved }: Props) {
           ))}
 
           {lineItems.length > 0 && (
-            <p className="text-xs text-slate-500 text-right font-medium">
+            <p className="text-xs t-secondary text-right font-medium">
               Total: ${lineItems.reduce((s, li) => s + li.amount * li.quantity, 0).toFixed(2)}
             </p>
           )}
@@ -198,8 +198,8 @@ export default function Scanner({ onSaved }: Props) {
   return (
     <div className="p-4 space-y-5">
       <div className="pt-2">
-        <h1 className="text-xl font-extrabold text-slate-900">Scan Receipt</h1>
-        <p className="text-sm text-slate-500 mt-1">Snap a pic. We'll handle the boring part.</p>
+        <h1 className="text-xl font-extrabold t-primary">Scan Receipt</h1>
+        <p className="text-sm t-secondary mt-1">Snap a pic. We'll handle the boring part.</p>
       </div>
 
       {error && (
@@ -214,7 +214,7 @@ export default function Scanner({ onSaved }: Props) {
           <Camera size={32} />
           <span className="text-sm font-semibold">Take Photo</span>
         </button>
-        <button onClick={() => fileRef.current?.click()} className="flex flex-col items-center gap-3 bg-white text-slate-700 rounded-2xl p-6 border border-slate-200 shadow-sm">
+        <button onClick={() => fileRef.current?.click()} className="flex flex-col items-center gap-3 bg-white t-primary rounded-2xl p-6 border border-slate-200 shadow-sm">
           <Upload size={32} />
           <span className="text-sm font-semibold">Upload File</span>
         </button>

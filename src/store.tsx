@@ -14,7 +14,7 @@ const defaultData: AppData = {
   accounts: [],
   transactions: [],
   bills: [],
-  settings: { currency: 'USD', name: '' },
+  settings: { currency: 'USD', name: '', darkMode: false },
   loading: true,
 }
 
@@ -85,6 +85,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => { refresh() }, [refresh])
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', !!data.settings.darkMode)
+  }, [data.settings.darkMode])
 
   return (
     <StoreContext.Provider value={{ data, refresh, refreshAccounts, refreshTransactions, refreshBills, dispatch }}>

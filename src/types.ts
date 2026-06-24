@@ -24,6 +24,7 @@ export const CATEGORIES = [
   'Entertainment',
   'Education',
   'Loans / Debt Service',
+  'Subscription',
 ] as const
 
 export type Category = typeof CATEGORIES[number]
@@ -58,6 +59,7 @@ export interface Bill {
   name: string
   amount: number
   dueDate: string
+  noDueDate?: boolean
   frequency: BillFrequency
   accountId?: string
   category: Category
@@ -69,6 +71,7 @@ export interface Bill {
 export interface AppSettings {
   currency: string
   name: string
+  darkMode?: boolean
 }
 
 export interface DashboardData {

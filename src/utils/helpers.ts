@@ -24,6 +24,14 @@ export function todayISO(): string {
   return new Date().toISOString().split('T')[0]
 }
 
+export function currentMonthName(): string {
+  return new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+}
+
+export function todayFormatted(): string {
+  return new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+}
+
 export function daysUntil(dateStr: string): number {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -52,7 +60,7 @@ export function getMonthRange(): { start: string; end: string } {
 }
 
 export function getSpendingEmoji(amount: number, budget: number): string {
-  if (budget <= 0) return '🤷'
+  if (budget <= 0) return ''
   const ratio = amount / budget
   if (ratio < 0.3) return '🟢'
   if (ratio < 0.6) return '🫡'
@@ -63,11 +71,9 @@ export function getSpendingEmoji(amount: number, budget: number): string {
 
 export function getFunInsight(weeklySpend: number, monthlySpend: number, topCategory: string, dailyAvg: number, currency: string): string[] {
   const insights: string[] = []
-
   if (dailyAvg > 0) {
-    insights.push(`You're burning ${formatCurrency(dailyAvg, currency)}/day this month. That's ${formatCurrency(dailyAvg * 365, currency)}/year — yikes or nah?`)
+    insights.push(`You're spending ${formatCurrency(dailyAvg, currency)}/day this month — that's ${formatCurrency(dailyAvg * 365, currency)}/year.`)
   }
-
   if (topCategory) {
     const quips: Record<string, string> = {
       'Household': 'Adulting is expensive. Your house agrees.',
@@ -76,14 +82,13 @@ export function getFunInsight(weeklySpend: number, monthlySpend: number, topCate
       'Entertainment': 'Living your best life, one subscription at a time.',
       'Education': 'Investing in your brain. Smart move.',
       'Loans / Debt Service': 'Paying off debt like a boss.',
+      'Subscription': 'The subscriptions are multiplying...',
     }
     insights.push(quips[topCategory] || `${topCategory} is your top spend.`)
   }
-
   if (weeklySpend === 0) {
     insights.push('Zero spent this week? Either you\'re a monk or forgot to log.')
   }
-
   return insights
 }
 
@@ -125,4 +130,18 @@ export function importData(json: string): boolean {
   } catch {
     return false
   }
+}
+
+export function getMonthlyBreakdown(transactions: { type: string; amount: number; date: string }[], type: 'income' | 'expense'): { month: string; total: number }[] {
+  const map: Record<string, number> = {}
+  for (const t of transactions.filter(t => t.type === type)) {
+    const key = t.date.slice(0, 7)
+    map[key] = (map[key] || 0) + t.amount
+  }
+  return Object.entries(map)
+    .sort(([a], [b]) => b.localeCompare(a))
+    .map(([month, total]) => {
+      const d = new Date(month + '-01')
+      return { month: d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }), total }
+    })
 }
