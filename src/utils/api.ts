@@ -1,5 +1,5 @@
 import { Account, Transaction, Bill, AppSettings, TransactionLineItem } from '../types'
-import { generateId } from './helpers'
+import { generateId, daysUntil } from './helpers'
 
 const STORAGE_KEY = 'finance_tracker_v2'
 
@@ -124,11 +124,18 @@ export const api = {
   getDashboard: async () => {
     const data = load()
     const now = new Date()
+    const todayStr = now.toISOString().split('T')[0]
     const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
     const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
     const monthEnd = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}-01`
 
-    const monthTxs = data.transactions.filter(t => t.date >= monthStart && t.date < monthEnd)
+    // Only count transactions up to today for current position
+    const pastTxs = data.transactions.filter(t => t.date <= todayStr)
+    const monthTxs = pastTxs.filter(t => t.date >= monthStart && t.date < monthEnd)
+
+    // Future transactions this month (scheduled, not yet affecting balances)
+    const futureTxs = data.transactions.filter(t => t.date > todayStr && t.date < monthEnd)
+    const scheduledExpenses = futureTxs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
 
     const totalAssets = data.accounts
       .filter(a => a.type === 'bank' || a.type === 'cash' || a.type === 'income')
@@ -151,6 +158,17 @@ export const api = {
       }
     }
 
+    // Bill status counts
+    const unpaidBills = data.bills.filter(b => !b.paid)
+    let upcomingCount = 0, dueSoonCount = 0, overdueCount = 0
+    for (const b of unpaidBills) {
+      if (b.noDueDate) { upcomingCount++; continue }
+      const days = daysUntil(b.dueDate)
+      if (days < 0) overdueCount++
+      else if (days <= 7) dueSoonCount++
+      else upcomingCount++
+    }
+
     return {
       totalAssets,
       totalDebt,
@@ -159,6 +177,10 @@ export const api = {
       monthlyExpenses,
       remainingBudget: monthlyIncome - monthlyExpenses,
       categoryBreakdown,
+      scheduledExpenses,
+      upcomingCount,
+      dueSoonCount,
+      overdueCount,
     }
   },
 }

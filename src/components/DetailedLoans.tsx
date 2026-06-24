@@ -95,7 +95,7 @@ export default function DetailedLoans({ onBack }: Props) {
   const cards = debts.filter(a => a.type === 'credit_card')
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="p-4 lg:p-6 space-y-4 pb-24 lg:pb-6">
       <div className="flex items-center gap-3 pt-2">
         <button onClick={onBack} className="p-2 rounded-xl hover:bg-[var(--bg-hover)] transition-colors t-secondary">
           <ArrowLeft size={20} />

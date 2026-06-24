@@ -61,7 +61,7 @@ export default function Settings() {
   const isDark = !!data.settings.darkMode
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="p-4 lg:p-6 space-y-4 pb-24 lg:pb-6">
       <div className="pt-2">
         <h1 className="text-xl font-extrabold t-primary">Settings</h1>
         <p className="text-xs t-muted mt-0.5">Tweak things, break nothing (hopefully)</p>

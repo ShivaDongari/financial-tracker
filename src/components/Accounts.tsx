@@ -86,7 +86,7 @@ export default function Accounts() {
   ) as Record<AccountType, Account[]>
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="p-4 lg:p-6 space-y-4 pb-24 lg:pb-6">
       <div className="flex items-center justify-between pt-2">
         <div>
           <h1 className="text-xl font-extrabold t-primary">Accounts</h1>

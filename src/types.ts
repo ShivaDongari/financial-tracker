@@ -35,6 +35,9 @@ export interface TransactionLineItem {
   amount: number
   category: Category
   quantity: number
+  unitPrice?: number
+  tax?: number
+  discount?: number
 }
 
 export interface Transaction {
@@ -53,6 +56,8 @@ export interface Transaction {
 }
 
 export type BillFrequency = 'once' | 'weekly' | 'monthly' | 'quarterly' | 'yearly'
+export type BillType = 'fixed' | 'variable'
+export type BillStatus = 'scheduled' | 'due' | 'overdue' | 'paid'
 
 export interface Bill {
   id: string
@@ -61,6 +66,7 @@ export interface Bill {
   dueDate: string
   noDueDate?: boolean
   frequency: BillFrequency
+  billType: BillType
   accountId?: string
   category: Category
   paid: boolean
@@ -82,4 +88,8 @@ export interface DashboardData {
   monthlyExpenses: number
   remainingBudget: number
   categoryBreakdown: Record<string, number>
+  scheduledExpenses: number
+  upcomingCount: number
+  dueSoonCount: number
+  overdueCount: number
 }
