@@ -129,6 +129,18 @@ export interface Reconciliation {
   createdAt: string
 }
 
+export interface SavingsGoal {
+  id: string
+  name: string
+  targetAmount: number
+  currentAmount: number
+  deadline?: string
+  accountId?: string
+  notes?: string
+  completed: boolean
+  createdAt: string
+}
+
 export interface AppSettings {
   currency: string
   name: string

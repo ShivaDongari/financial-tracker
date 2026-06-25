@@ -1,6 +1,6 @@
 import { ReactNode } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Wallet, ArrowLeftRight, CalendarClock, ScanLine, Settings, RefreshCw, TrendingUp, PiggyBank, Scale, BarChart3, FileUp, Search, LucideIcon } from 'lucide-react'
+import { LayoutDashboard, Wallet, ArrowLeftRight, CalendarClock, ScanLine, Settings, RefreshCw, TrendingUp, PiggyBank, Scale, BarChart3, FileUp, Search, Target, LucideIcon } from 'lucide-react'
 import { useStore } from '../store'
 import MonthSelector from './MonthSelector'
 import QuickAdd from './QuickAdd'
@@ -15,6 +15,7 @@ const navItems: NavItem[] = [
   { path: '/bills', label: 'Bills & Payments', Icon: CalendarClock, group: 'main' },
   { path: '/subscriptions', label: 'Subscriptions', Icon: RefreshCw, group: 'main' },
   { path: '/budgets', label: 'Budgets', Icon: PiggyBank, group: 'main' },
+  { path: '/goals', label: 'Goals', Icon: Target, group: 'main' },
   { path: '/reports', label: 'Reports', Icon: BarChart3, group: 'main' },
   { path: '/scan', label: 'Scan Receipt', Icon: ScanLine, group: 'tools' },
   { path: '/import', label: 'Import Data', Icon: FileUp, group: 'tools' },

@@ -1,21 +1,32 @@
-import { useEffect } from 'react'
+import { useEffect, lazy, Suspense } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useStore } from './store'
 import Layout from './components/Layout'
 import Dashboard from './components/Dashboard'
-import Accounts from './components/Accounts'
-import Transactions from './components/Transactions'
-import Bills from './components/Bills'
-import Scanner from './components/Scanner'
-import Settings from './components/Settings'
-import Subscriptions from './components/Subscriptions'
-import Budgets from './components/Budgets'
-import Reconciliation from './components/Reconciliation'
-import Reports from './components/Reports'
-import Import from './components/Import'
-import DetailedAssets from './components/DetailedAssets'
-import AllMonthsIncome from './components/AllMonthsIncome'
-import DetailedLoans from './components/DetailedLoans'
+
+// Lazy-load heavy pages
+const Accounts = lazy(() => import('./components/Accounts'))
+const Transactions = lazy(() => import('./components/Transactions'))
+const Bills = lazy(() => import('./components/Bills'))
+const Subscriptions = lazy(() => import('./components/Subscriptions'))
+const Budgets = lazy(() => import('./components/Budgets'))
+const Goals = lazy(() => import('./components/Goals'))
+const Reports = lazy(() => import('./components/Reports'))
+const Scanner = lazy(() => import('./components/Scanner'))
+const Import = lazy(() => import('./components/Import'))
+const Reconciliation = lazy(() => import('./components/Reconciliation'))
+const Settings = lazy(() => import('./components/Settings'))
+const DetailedAssets = lazy(() => import('./components/DetailedAssets'))
+const AllMonthsIncome = lazy(() => import('./components/AllMonthsIncome'))
+const DetailedLoans = lazy(() => import('./components/DetailedLoans'))
+
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center py-20">
+      <div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }} />
+    </div>
+  )
+}
 
 export default function App() {
   const refresh = useStore(s => s.refresh)
@@ -23,23 +34,26 @@ export default function App() {
 
   return (
     <Layout>
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/accounts" element={<Accounts />} />
-        <Route path="/transactions" element={<Transactions />} />
-        <Route path="/bills" element={<Bills />} />
-        <Route path="/subscriptions" element={<Subscriptions />} />
-        <Route path="/budgets" element={<Budgets />} />
-        <Route path="/reconciliation" element={<Reconciliation />} />
-        <Route path="/reports" element={<Reports />} />
-        <Route path="/import" element={<Import />} />
-        <Route path="/scan" element={<Scanner />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/assets" element={<DetailedAssets />} />
-        <Route path="/income-history" element={<AllMonthsIncome />} />
-        <Route path="/loans" element={<DetailedLoans />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/accounts" element={<Accounts />} />
+          <Route path="/transactions" element={<Transactions />} />
+          <Route path="/bills" element={<Bills />} />
+          <Route path="/subscriptions" element={<Subscriptions />} />
+          <Route path="/budgets" element={<Budgets />} />
+          <Route path="/goals" element={<Goals />} />
+          <Route path="/reports" element={<Reports />} />
+          <Route path="/import" element={<Import />} />
+          <Route path="/scan" element={<Scanner />} />
+          <Route path="/reconciliation" element={<Reconciliation />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/assets" element={<DetailedAssets />} />
+          <Route path="/income-history" element={<AllMonthsIncome />} />
+          <Route path="/loans" element={<DetailedLoans />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
     </Layout>
   )
 }

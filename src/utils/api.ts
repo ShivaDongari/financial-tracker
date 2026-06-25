@@ -1,5 +1,5 @@
 import { db } from '../db'
-import { Account, Transaction, TransactionLineItem, Bill, Subscription, Budget, Reconciliation, DashboardData, CATEGORY_TREE } from '../types'
+import { Account, Transaction, TransactionLineItem, Bill, Subscription, Budget, Reconciliation, SavingsGoal, DashboardData, CATEGORY_TREE } from '../types'
 import { generateId, daysUntil, getMonthStartEnd, todayISO, currentMonthKey, getNextOccurrence } from './helpers'
 
 type NewAccount = Omit<Account, 'id' | 'createdAt'>
@@ -203,12 +203,13 @@ export const api = {
     const isCurrentMonth = mk === today.slice(0, 7)
     const cutoff = isCurrentMonth ? today : mEnd
 
-    const [accounts, allTx, allBills, allSubs] = await Promise.all([
+    const [accounts, rawTx, allBills, allSubs] = await Promise.all([
       db.accounts.toArray(),
-      db.transactions.where('date').between(mStart, mEnd, true, true).toArray(),
+      db.transactions.toArray(),
       db.bills.toArray(),
-      db.subscriptions.where('active').equals(1).toArray(),
+      db.subscriptions.toArray().then(subs => subs.filter(s => s.active)),
     ])
+    const allTx = rawTx.filter(t => t.date >= mStart && t.date <= mEnd)
 
     const monthTxs = allTx.filter(t => t.date <= cutoff)
     const futureTxs = isCurrentMonth ? allTx.filter(t => t.date > today) : []
@@ -391,29 +392,58 @@ export const api = {
     return { generated, notifications }
   },
 
+  // ── Savings Goals ──
+
+  async getGoals(): Promise<SavingsGoal[]> {
+    return db.goals.orderBy('createdAt').reverse().toArray()
+  },
+
+  async createGoal(input: Omit<SavingsGoal, 'id' | 'createdAt'>): Promise<SavingsGoal> {
+    const goal: SavingsGoal = { ...input, id: generateId(), createdAt: new Date().toISOString() }
+    await db.goals.add(goal)
+    return goal
+  },
+
+  async updateGoal(id: string, updates: Partial<SavingsGoal>): Promise<void> {
+    await db.goals.update(id, updates)
+  },
+
+  async addToGoal(id: string, amount: number): Promise<void> {
+    const goal = await db.goals.get(id)
+    if (!goal) return
+    const newAmount = goal.currentAmount + amount
+    const completed = newAmount >= goal.targetAmount
+    await db.goals.update(id, { currentAmount: newAmount, completed })
+  },
+
+  async deleteGoal(id: string): Promise<void> {
+    await db.goals.delete(id)
+  },
+
   // ── Export/Import ──
 
   async exportAll(): Promise<string> {
-    const [accounts, transactions, bills, subscriptions, budgets, reconciliations, settings] = await Promise.all([
+    const [accounts, transactions, bills, subscriptions, budgets, reconciliations, goals, settings] = await Promise.all([
       db.accounts.toArray(), db.transactions.toArray(), db.bills.toArray(),
-      db.subscriptions.toArray(), db.budgets.toArray(), db.reconciliations.toArray(), api.getSettings(),
+      db.subscriptions.toArray(), db.budgets.toArray(), db.reconciliations.toArray(), db.goals.toArray(), api.getSettings(),
     ])
-    return JSON.stringify({ accounts, transactions, bills, subscriptions, budgets, reconciliations, settings })
+    return JSON.stringify({ accounts, transactions, bills, subscriptions, budgets, reconciliations, goals, settings })
   },
 
   async importAll(json: string): Promise<boolean> {
     try {
       const data = JSON.parse(json)
       if (!data.accounts || !data.transactions || !data.bills) return false
-      await db.transaction('rw', [db.accounts, db.transactions, db.bills, db.subscriptions, db.budgets, db.reconciliations, db.settings], async () => {
+      await db.transaction('rw', [db.accounts, db.transactions, db.bills, db.subscriptions, db.budgets, db.reconciliations, db.goals, db.settings], async () => {
         await db.accounts.clear(); await db.transactions.clear(); await db.bills.clear()
-        await db.subscriptions.clear(); await db.budgets.clear(); await db.reconciliations.clear()
+        await db.subscriptions.clear(); await db.budgets.clear(); await db.reconciliations.clear(); await db.goals.clear()
         if (data.accounts.length) await db.accounts.bulkAdd(data.accounts)
         if (data.transactions.length) await db.transactions.bulkAdd(data.transactions)
         if (data.bills.length) await db.bills.bulkAdd(data.bills)
         if (data.subscriptions?.length) await db.subscriptions.bulkAdd(data.subscriptions)
         if (data.budgets?.length) await db.budgets.bulkAdd(data.budgets)
         if (data.reconciliations?.length) await db.reconciliations.bulkAdd(data.reconciliations)
+        if (data.goals?.length) await db.goals.bulkAdd(data.goals)
         if (data.settings) await db.settings.put({ ...data.settings, id: 'app' })
       })
       return true

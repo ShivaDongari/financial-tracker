@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie'
-import { Account, Transaction, Bill, Subscription, Budget, Reconciliation } from './types'
+import { Account, Transaction, Bill, Subscription, Budget, Reconciliation, SavingsGoal } from './types'
 
 interface Settings {
   id: string
@@ -16,6 +16,7 @@ const db = new Dexie('FinTracker') as Dexie & {
   subscriptions: EntityTable<Subscription, 'id'>
   budgets: EntityTable<Budget, 'id'>
   reconciliations: EntityTable<Reconciliation, 'id'>
+  goals: EntityTable<SavingsGoal, 'id'>
   settings: EntityTable<Settings, 'id'>
 }
 
@@ -37,9 +38,21 @@ db.version(2).stores({
   settings: 'id',
 })
 
+db.version(3).stores({
+  accounts: 'id, type, createdAt',
+  transactions: 'id, type, category, accountId, date, billId, createdAt',
+  bills: 'id, category, paid, dueDate, subscriptionId, createdAt',
+  subscriptions: 'id, category, active, nextRenewal, linkedBillId, createdAt',
+  budgets: 'id, category',
+  reconciliations: 'id, accountId, date, resolved',
+  goals: 'id, completed, createdAt',
+  settings: 'id',
+})
+
 async function migrateFromLocalStorage() {
   const count = await db.accounts.count()
   if (count > 0) return
+  if (typeof localStorage === 'undefined') return
   const raw = localStorage.getItem('finance_tracker_v2')
   if (!raw) return
   try {

@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { Account, Transaction, Bill, Subscription, Budget, Reconciliation } from './types'
+import { Account, Transaction, Bill, Subscription, Budget, Reconciliation, SavingsGoal } from './types'
 import { api } from './utils/api'
 import { currentMonthKey } from './utils/helpers'
 
@@ -17,6 +17,7 @@ interface Store {
   subscriptions: Subscription[]
   budgets: Budget[]
   reconciliations: Reconciliation[]
+  goals: SavingsGoal[]
   settings: AppSettings
   loading: boolean
   selectedMonth: string
@@ -28,23 +29,24 @@ interface Store {
   refreshSubscriptions: () => Promise<void>
   refreshBudgets: () => Promise<void>
   refreshReconciliations: () => Promise<void>
+  refreshGoals: () => Promise<void>
   setMonth: (m: string) => void
   updateSettings: (updates: Partial<AppSettings>) => Promise<void>
 }
 
 export const useStore = create<Store>((set) => ({
-  accounts: [], transactions: [], bills: [], subscriptions: [], budgets: [], reconciliations: [],
+  accounts: [], transactions: [], bills: [], subscriptions: [], budgets: [], reconciliations: [], goals: [],
   settings: { currency: 'USD', name: '', darkMode: false, selectedMonth: currentMonthKey() },
   loading: true, selectedMonth: currentMonthKey(),
 
   refresh: async () => {
     set({ loading: true })
     try {
-      const [accounts, transactions, bills, subscriptions, budgets, reconciliations, settings] = await Promise.all([
+      const [accounts, transactions, bills, subscriptions, budgets, reconciliations, goals, settings] = await Promise.all([
         api.getAccounts(), api.getTransactions(), api.getBills(), api.getSubscriptions(),
-        api.getBudgets(), api.getReconciliations(), api.getSettings(),
+        api.getBudgets(), api.getReconciliations(), api.getGoals(), api.getSettings(),
       ])
-      set({ accounts, transactions, bills, subscriptions, budgets, reconciliations, settings,
+      set({ accounts, transactions, bills, subscriptions, budgets, reconciliations, goals, settings,
         selectedMonth: settings.selectedMonth || currentMonthKey(), loading: false })
       document.documentElement.classList.toggle('dark', settings.darkMode)
       // Process recurring bills on load
@@ -58,6 +60,7 @@ export const useStore = create<Store>((set) => ({
   refreshSubscriptions: async () => set({ subscriptions: await api.getSubscriptions() }),
   refreshBudgets: async () => set({ budgets: await api.getBudgets() }),
   refreshReconciliations: async () => set({ reconciliations: await api.getReconciliations() }),
+  refreshGoals: async () => set({ goals: await api.getGoals() }),
 
   setMonth: (m: string) => set({ selectedMonth: m }),
 
