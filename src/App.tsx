@@ -11,6 +11,8 @@ import Settings from './components/Settings'
 import Subscriptions from './components/Subscriptions'
 import Budgets from './components/Budgets'
 import Reconciliation from './components/Reconciliation'
+import Reports from './components/Reports'
+import Import from './components/Import'
 import DetailedAssets from './components/DetailedAssets'
 import AllMonthsIncome from './components/AllMonthsIncome'
 import DetailedLoans from './components/DetailedLoans'
@@ -29,6 +31,8 @@ export default function App() {
         <Route path="/subscriptions" element={<Subscriptions />} />
         <Route path="/budgets" element={<Budgets />} />
         <Route path="/reconciliation" element={<Reconciliation />} />
+        <Route path="/reports" element={<Reports />} />
+        <Route path="/import" element={<Import />} />
         <Route path="/scan" element={<Scanner />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/assets" element={<DetailedAssets />} />

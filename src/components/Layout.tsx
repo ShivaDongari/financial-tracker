@@ -1,6 +1,6 @@
 import { ReactNode } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Wallet, ArrowLeftRight, CalendarClock, ScanLine, Settings, RefreshCw, TrendingUp, PiggyBank, Scale, LucideIcon } from 'lucide-react'
+import { LayoutDashboard, Wallet, ArrowLeftRight, CalendarClock, ScanLine, Settings, RefreshCw, TrendingUp, PiggyBank, Scale, BarChart3, FileUp, LucideIcon } from 'lucide-react'
 import { useStore } from '../store'
 import MonthSelector from './MonthSelector'
 
@@ -13,7 +13,9 @@ const navItems: NavItem[] = [
   { path: '/bills', label: 'Bills & Payments', Icon: CalendarClock, group: 'main' },
   { path: '/subscriptions', label: 'Subscriptions', Icon: RefreshCw, group: 'main' },
   { path: '/budgets', label: 'Budgets', Icon: PiggyBank, group: 'main' },
+  { path: '/reports', label: 'Reports', Icon: BarChart3, group: 'main' },
   { path: '/scan', label: 'Scan Receipt', Icon: ScanLine, group: 'tools' },
+  { path: '/import', label: 'Import Data', Icon: FileUp, group: 'tools' },
   { path: '/reconciliation', label: 'Reconcile', Icon: Scale, group: 'tools' },
   { path: '/settings', label: 'Settings', Icon: Settings, group: 'system' },
 ]
@@ -25,7 +27,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   const { pathname } = useLocation()
   const settings = useStore(s => s.settings)
 
-  const drillPaths = ['/assets', '/income-history', '/loans', '/reconciliation']
+  const drillPaths = ['/assets', '/income-history', '/loans', '/reconciliation', '/import']
   const activePath = drillPaths.includes(pathname) ? '/' : pathname
 
   return (
