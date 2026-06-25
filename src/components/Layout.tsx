@@ -1,8 +1,10 @@
 import { ReactNode } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Wallet, ArrowLeftRight, CalendarClock, ScanLine, Settings, RefreshCw, TrendingUp, PiggyBank, Scale, BarChart3, FileUp, LucideIcon } from 'lucide-react'
+import { LayoutDashboard, Wallet, ArrowLeftRight, CalendarClock, ScanLine, Settings, RefreshCw, TrendingUp, PiggyBank, Scale, BarChart3, FileUp, Search, LucideIcon } from 'lucide-react'
 import { useStore } from '../store'
 import MonthSelector from './MonthSelector'
+import QuickAdd from './QuickAdd'
+import CommandPalette from './CommandPalette'
 
 interface NavItem { path: string; label: string; Icon: LucideIcon; group: string }
 
@@ -30,6 +32,10 @@ export default function Layout({ children }: { children: ReactNode }) {
   const drillPaths = ['/assets', '/income-history', '/loans', '/reconciliation', '/import']
   const activePath = drillPaths.includes(pathname) ? '/' : pathname
 
+  function openCommandPalette() {
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))
+  }
+
   return (
     <div className="flex h-screen w-full bg-page">
       {/* Desktop sidebar */}
@@ -42,6 +48,13 @@ export default function Layout({ children }: { children: ReactNode }) {
             <span className="text-sm font-semibold t-primary">FinTracker</span>
           </div>
         </div>
+
+        {/* Search trigger */}
+        <button onClick={openCommandPalette} className="mx-2 mt-2 flex items-center gap-2 px-3 py-2 rounded-lg text-xs t-muted hover:bg-[var(--bg-hover)] transition-colors border border-theme">
+          <Search size={13} />
+          <span className="flex-1 text-left">Search...</span>
+          <kbd className="text-[9px] px-1 py-0.5 rounded border border-theme">⌘K</kbd>
+        </button>
 
         <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
           <SidebarGroup label="Overview" items={navItems.filter(n => n.group === 'main')} active={activePath} onNav={navigate} />
@@ -66,11 +79,16 @@ export default function Layout({ children }: { children: ReactNode }) {
 
       {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="hidden lg:flex items-center justify-between px-6 py-3 border-b border-theme bg-nav shrink-0">
+        <header className="hidden lg:flex items-center justify-between px-6 py-2.5 border-b border-theme bg-nav shrink-0">
           <MonthSelector />
-          <button onClick={() => navigate('/scan')} className="btn-primary text-xs !py-1.5 !px-3">
-            <ScanLine size={13} className="inline mr-1" />Scan
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={openCommandPalette} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs t-muted hover:bg-[var(--bg-hover)] border border-theme transition-colors">
+              <Search size={12} /> Search <kbd className="text-[9px] px-1 rounded border border-theme ml-1">⌘K</kbd>
+            </button>
+            <button onClick={() => navigate('/scan')} className="btn-primary text-xs !py-1.5 !px-3">
+              <ScanLine size={13} className="inline mr-1" />Scan
+            </button>
+          </div>
         </header>
 
         <main className="flex-1 overflow-y-auto">
@@ -94,6 +112,10 @@ export default function Layout({ children }: { children: ReactNode }) {
           })}
         </div>
       </nav>
+
+      {/* Global overlays */}
+      <QuickAdd />
+      <CommandPalette />
     </div>
   )
 }

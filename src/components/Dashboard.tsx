@@ -48,7 +48,7 @@ export default function Dashboard() {
   const categoryData = dash ? CATEGORIES.map((cat, i) => ({ name: cat, value: dash.categoryBreakdown[cat] || 0, color: COLORS[i % COLORS.length] })).filter(d => d.value > 0) : []
 
   return (
-    <div className="p-4 lg:p-6 space-y-5 pb-24 lg:pb-6">
+    <div className="p-4 lg:p-5 space-y-4 lg:space-y-3 pb-24 lg:pb-4">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
         <div>
@@ -117,7 +117,7 @@ export default function Dashboard() {
           {categoryData.length > 0 && (
             <div className="card">
               <h2 className="text-xs font-semibold t-secondary uppercase tracking-wider mb-3">Expenses by Category</h2>
-              <ResponsiveContainer width="100%" height={Math.max(160, categoryData.length * 32)}>
+              <ResponsiveContainer width="100%" height={Math.max(120, categoryData.length * 26)}>
                 <BarChart data={categoryData} layout="vertical" margin={{ left: 0, right: 0 }}>
                   <XAxis type="number" tickFormatter={v => `$${v}`} fontSize={10} stroke="var(--text-muted)" />
                   <YAxis type="category" dataKey="name" width={110} fontSize={11} stroke="var(--text-muted)" />
@@ -165,7 +165,7 @@ export default function Dashboard() {
           {categoryData.length > 0 && (
             <div className="card">
               <h2 className="text-xs font-semibold t-secondary uppercase tracking-wider mb-3">Distribution</h2>
-              <ResponsiveContainer width="100%" height={180}>
+              <ResponsiveContainer width="100%" height={150}>
                 <PieChart>
                   <Pie data={categoryData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={2} fontSize={9}
                     label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`} labelLine={false}>
@@ -229,12 +229,14 @@ export default function Dashboard() {
 
 function KPI({ label, value, icon, color, onClick, sub }: { label: string; value: string; icon: React.ReactNode; color: string; onClick?: () => void; sub?: string }) {
   return (
-    <button onClick={onClick} className={`card !p-3.5 w-full text-left ${onClick ? 'card-hover cursor-pointer' : ''}`}>
-      <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white mb-2" style={{ background: color }}>{icon}</div>
-      <p className="text-[10px] font-semibold t-muted uppercase tracking-wider">{label}</p>
-      <p className="text-base font-bold t-primary mt-0.5 truncate">{value}</p>
-      {sub && <p className="text-[10px] t-muted mt-0.5 truncate">{sub}</p>}
-      {onClick && <p className="text-[10px] t-accent mt-1">View details →</p>}
+    <button onClick={onClick} className={`card !p-3 w-full text-left ${onClick ? 'card-hover cursor-pointer' : ''}`}>
+      <div className="flex items-center gap-2 mb-1.5">
+        <div className="w-6 h-6 rounded flex items-center justify-center text-white" style={{ background: color }}>{icon}</div>
+        <p className="text-[10px] font-semibold t-muted uppercase tracking-wider">{label}</p>
+      </div>
+      <p className="text-base font-bold t-primary truncate">{value}</p>
+      {sub && <p className="text-[10px] t-muted truncate">{sub}</p>}
+      {onClick && <p className="text-[9px] t-accent mt-0.5">Details →</p>}
     </button>
   )
 }
