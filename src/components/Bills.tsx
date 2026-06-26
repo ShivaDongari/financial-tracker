@@ -14,6 +14,7 @@ const FREQ_LABELS: Record<BillFrequency, string> = {
 const emptyForm = {
   name: '', amount: '', dueDate: todayISO(), noDueDate: false, frequency: 'monthly' as BillFrequency,
   billType: 'fixed' as BillType, accountId: '', category: 'Household' as string, paid: false, notes: '',
+  isRecurringPayment: false,
 }
 
 export default function Bills() {
@@ -23,12 +24,14 @@ export default function Bills() {
   const refreshBills = useStore(s => s.refreshBills)
   const refreshTransactions = useStore(s => s.refreshTransactions)
   const refreshAccounts = useStore(s => s.refreshAccounts)
+  const refreshSubscriptions = useStore(s => s.refreshSubscriptions)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<Bill | null>(null)
   const [form, setForm] = useState(emptyForm)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [payBill, setPayBill] = useState<Bill | null>(null)
   const [payAccountId, setPayAccountId] = useState('')
+  const [payDate, setPayDate] = useState(todayISO())
   const [viewTab, setViewTab] = useState<'pending' | 'paid' | 'all'>('pending')
   const [typeFilter, setTypeFilter] = useState<'all' | 'fixed' | 'variable'>('all')
   const [search, setSearch] = useState('')
@@ -68,7 +71,7 @@ export default function Bills() {
   function openAdd() { setEditing(null); setForm(emptyForm); setShowForm(true) }
   function openEdit(b: Bill) {
     setEditing(b)
-    setForm({ name: b.name, amount: String(b.amount), dueDate: b.dueDate || todayISO(), noDueDate: !!b.noDueDate, frequency: b.frequency, billType: b.billType || 'fixed', accountId: b.accountId || '', category: b.category, paid: b.paid, notes: b.notes || '' })
+    setForm({ name: b.name, amount: String(b.amount), dueDate: b.dueDate || todayISO(), noDueDate: !!b.noDueDate, frequency: b.frequency, billType: b.billType || 'fixed', accountId: b.accountId || '', category: b.category, paid: b.paid, notes: b.notes || '', isRecurringPayment: !!b.isRecurringPayment })
     setShowForm(true)
   }
 
@@ -79,19 +82,21 @@ export default function Bills() {
       frequency: form.noDueDate ? 'once' : form.frequency, billType: form.billType,
       accountId: form.accountId || undefined, category: form.category,
       paid: form.paid, notes: form.notes.trim(),
+      isRecurringPayment: form.isRecurringPayment,
     }
     if (!payload.name) return
     if (editing) await api.updateBill(editing.id, payload)
     else await api.createBill(payload)
+    if (!editing && form.isRecurringPayment) await refreshSubscriptions()
     await refreshBills()
     setShowForm(false)
   }
 
   async function handlePay() {
     if (!payBill || !payAccountId) return
-    await api.payBill(payBill.id, payAccountId)
+    await api.payBill(payBill.id, payAccountId, payDate)
     await Promise.all([refreshBills(), refreshTransactions(), refreshAccounts()])
-    setPayBill(null); setPayAccountId('')
+    setPayBill(null); setPayAccountId(''); setPayDate(todayISO())
   }
 
   async function handleUnpay(b: Bill) {
@@ -234,6 +239,9 @@ export default function Bills() {
               {accounts.map(a => <option key={a.id} value={a.id}>{a.name} ({formatCurrency(a.balance, cur)})</option>)}
             </select>
           </FormField>
+          <FormField label="Payment date">
+            <input className="input" type="date" value={payDate} onChange={e => setPayDate(e.target.value)} />
+          </FormField>
           <p className="text-[11px] t-muted mb-4">This will mark the bill as paid, create an expense transaction, and deduct from the selected account.</p>
           <div className="flex gap-2">
             <button type="button" onClick={() => setPayBill(null)} className="flex-1 btn-secondary">Cancel</button>
@@ -290,6 +298,13 @@ export default function Bills() {
           <FormField label="Notes (optional)">
             <input className="input" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
           </FormField>
+          {!editing && !form.noDueDate && form.frequency !== 'once' && (
+            <div className="flex items-center gap-2 mb-3">
+              <input type="checkbox" id="isRecurring" checked={form.isRecurringPayment} onChange={e => setForm(f => ({ ...f, isRecurringPayment: e.target.checked }))} className="rounded" />
+              <label htmlFor="isRecurring" className="text-sm t-secondary">This is a recurring payment</label>
+              <span className="text-[10px] t-muted">(auto-creates in Recurring Payments)</span>
+            </div>
+          )}
           <div className="flex gap-2 mt-2">
             <button type="button" onClick={() => setShowForm(false)} className="flex-1 btn-secondary">Cancel</button>
             <button type="submit" className="flex-1 btn-primary">Save</button>

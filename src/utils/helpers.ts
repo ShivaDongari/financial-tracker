@@ -107,7 +107,7 @@ export function getFunInsight(weeklySpend: number, monthlySpend: number, topCate
       'Entertainment': 'Entertainment is your biggest category.',
       'Education': 'Education is your top investment.',
       'Loans / Debt Service': 'Debt payments lead your outflows.',
-      'Subscription': 'Subscriptions are your top recurring cost.',
+      'Recurring Payments': 'Recurring payments lead your expenses.',
     }
     insights.push(quips[topCategory] || `${topCategory} is your top category.`)
   }

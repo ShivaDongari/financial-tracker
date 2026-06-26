@@ -9,7 +9,7 @@ import { Modal, FormField } from './Accounts'
 
 const emptyForm = {
   name: '', amount: '', frequency: 'monthly' as 'monthly' | 'quarterly' | 'yearly',
-  nextRenewal: todayISO(), category: 'Subscriptions', subcategory: '', accountId: '', active: true, notes: '',
+  nextRenewal: todayISO(), category: 'Recurring Payments', subcategory: '', accountId: '', active: true, notes: '',
 }
 
 export default function Subscriptions() {
@@ -65,7 +65,7 @@ export default function Subscriptions() {
     <div className="p-4 lg:p-6 space-y-4 pb-24 lg:pb-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
-          <h1 className="text-xl font-bold t-primary">Subscriptions</h1>
+          <h1 className="text-xl font-bold t-primary">Recurring Payments</h1>
           <p className="text-xs t-muted">{active.length} active · {formatCurrency(totalMonthly, cur)}/mo · {formatCurrency(totalYearly, cur)}/yr</p>
         </div>
         <button onClick={openAdd} className="btn-primary self-start"><Plus size={14} className="inline mr-1" />Add</button>

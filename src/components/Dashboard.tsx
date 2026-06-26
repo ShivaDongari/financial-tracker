@@ -85,8 +85,24 @@ export default function Dashboard() {
             <MiniCard label="Total Debt" value={formatCurrency(dash.debtSummary.totalOutstanding, cur)} bg="var(--danger-light)" color="var(--danger)" />
             <MiniCard label="Due This Month" value={formatCurrency(dash.debtSummary.dueThisMonth, cur)} bg="var(--warning-light)" color="var(--warning)" />
             <MiniCard label="Bills" value={formatCurrency(dash.debtSummary.billsDue, cur)} bg="var(--bg-accent)" color="var(--accent)" />
-            <MiniCard label="Subscriptions" value={formatCurrency(dash.debtSummary.subscriptionsDue, cur)} bg="var(--bg-accent)" color="var(--accent)" />
+            <MiniCard label="Recurring" value={formatCurrency(dash.debtSummary.recurringDue, cur)} bg="var(--bg-accent)" color="var(--accent)" />
             <MiniCard label="Loan Payments" value={formatCurrency(dash.debtSummary.loanPaymentsDue, cur)} bg="var(--bg-accent)" color="var(--accent)" />
+          </div>
+        </div>
+      )}
+
+      {/* Recurring Cost Cards */}
+      {dash && (dash.totalRecurringCost > 0 || dash.totalSubscriptionsCost > 0) && (
+        <div className="grid grid-cols-2 gap-3">
+          <div className="card !p-3.5">
+            <p className="text-[10px] font-semibold t-muted uppercase tracking-wider">Total Monthly Recurring</p>
+            <p className="text-lg font-bold t-primary mt-0.5">{formatCurrency(dash.totalRecurringCost, cur)}</p>
+            <p className="text-[10px] t-muted mt-0.5">All fixed recurring payments</p>
+          </div>
+          <div className="card !p-3.5">
+            <p className="text-[10px] font-semibold t-muted uppercase tracking-wider">Subscriptions Cost</p>
+            <p className="text-lg font-bold t-accent mt-0.5">{formatCurrency(dash.totalSubscriptionsCost, cur)}</p>
+            <p className="text-[10px] t-muted mt-0.5">Streaming, software, memberships</p>
           </div>
         </div>
       )}

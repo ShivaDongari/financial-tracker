@@ -92,7 +92,7 @@ function guessCategory(description: string): string {
   const keywords: Record<string, string[]> = {
     'Food & Dining': ['restaurant', 'cafe', 'coffee', 'pizza', 'burger', 'food', 'grocery', 'supermarket', 'walmart', 'target', 'costco'],
     'Transportation': ['gas', 'fuel', 'uber', 'lyft', 'parking', 'transit', 'shell', 'chevron'],
-    'Subscriptions': ['netflix', 'spotify', 'apple', 'google', 'amazon prime', 'disney', 'hulu', 'youtube'],
+    'Recurring Payments': ['netflix', 'spotify', 'apple', 'google', 'amazon prime', 'disney', 'hulu', 'youtube', 'rent', 'insurance', 'gym', 'membership'],
     'Entertainment': ['movie', 'theater', 'gaming', 'steam', 'playstation'],
     'Healthcare': ['pharmacy', 'cvs', 'walgreens', 'doctor', 'hospital', 'dental', 'medical'],
     'Utilities': ['electric', 'water', 'internet', 'phone', 'comcast', 'verizon', 'att'],

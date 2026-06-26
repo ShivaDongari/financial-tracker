@@ -13,7 +13,7 @@ const navItems: NavItem[] = [
   { path: '/accounts', label: 'Accounts', Icon: Wallet, group: 'main' },
   { path: '/transactions', label: 'Transactions', Icon: ArrowLeftRight, group: 'main' },
   { path: '/bills', label: 'Bills & Payments', Icon: CalendarClock, group: 'main' },
-  { path: '/subscriptions', label: 'Subscriptions', Icon: RefreshCw, group: 'main' },
+  { path: '/subscriptions', label: 'Recurring Payments', Icon: RefreshCw, group: 'main' },
   { path: '/budgets', label: 'Budgets', Icon: PiggyBank, group: 'main' },
   { path: '/goals', label: 'Goals', Icon: Target, group: 'main' },
   { path: '/reports', label: 'Reports', Icon: BarChart3, group: 'main' },

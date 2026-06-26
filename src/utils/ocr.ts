@@ -35,7 +35,7 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
   'Entertainment': ['netflix', 'spotify', 'movie', 'cinema', 'theater', 'gaming', 'steam', 'playstation', 'xbox', 'hobby', 'concert'],
   'Education': ['book', 'university', 'college', 'tuition', 'course', 'udemy', 'coursera', 'school', 'textbook', 'software', 'adobe', 'microsoft'],
   'Debt Payments': ['loan', 'mortgage', 'payment', 'interest', 'principal', 'emi', 'installment', 'debt'],
-  'Subscriptions': ['subscription', 'monthly plan', 'annual plan', 'membership', 'premium', 'pro plan', 'recurring'],
+  'Recurring Payments': ['subscription', 'monthly plan', 'annual plan', 'membership', 'premium', 'pro plan', 'recurring', 'rent', 'internet', 'insurance', 'gym', 'phone plan'],
 }
 
 function suggestCategory(text: string): string {

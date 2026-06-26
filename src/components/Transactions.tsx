@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Plus, Pencil, Trash2, Search, ChevronDown, ChevronUp } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search, ChevronDown, ChevronUp, RotateCcw } from 'lucide-react'
 import { useStore } from '../store'
 import { Transaction, TransactionType, CATEGORIES } from '../types'
 import CategoryPicker from './CategoryPicker'
@@ -69,6 +69,19 @@ export default function Transactions() {
     await api.deleteTransaction(deleteId); await refreshTransactions(); setDeleteId(null)
   }
 
+  const refreshAccounts = useStore(s => s.refreshAccounts)
+  const [refundTxId, setRefundTxId] = useState<string | null>(null)
+  const [refundAmount, setRefundAmount] = useState('')
+  const [refundDate, setRefundDate] = useState(todayISO())
+
+  async function handleRefund() {
+    if (!refundTxId) return
+    const amt = refundAmount ? parseFloat(refundAmount) : undefined
+    await api.refundTransaction(refundTxId, amt, refundDate)
+    await Promise.all([refreshTransactions(), refreshAccounts()])
+    setRefundTxId(null); setRefundAmount(''); setRefundDate(todayISO())
+  }
+
   function toggleSort(col: 'date' | 'amount') {
     if (sortBy === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
     else { setSortBy(col); setSortDir('desc') }
@@ -88,7 +101,7 @@ export default function Transactions() {
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex rounded-lg overflow-hidden border border-theme">
-          {(['all', 'income', 'expense', 'transfer'] as const).map(f => (
+          {(['all', 'income', 'expense', 'transfer', 'refund'] as const).map(f => (
             <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 text-xs font-medium capitalize ${filter === f ? 'text-white' : 't-secondary'}`}
               style={filter === f ? { background: 'var(--accent)' } : undefined}>{f}</button>
           ))}
@@ -135,7 +148,8 @@ export default function Transactions() {
                     <tr key={tx.id} className="hover:bg-[var(--bg-hover)] transition-colors">
                       <td className="table-cell whitespace-nowrap text-xs t-muted">{formatDate(tx.date)}</td>
                       <td className="table-cell">
-                        <span className={`badge ${tx.type === 'income' ? 'badge-success' : tx.type === 'expense' ? 'badge-danger' : 'badge-accent'}`}>{tx.type}</span>
+                        <span className={`badge ${tx.type === 'income' ? 'badge-success' : tx.type === 'expense' ? 'badge-danger' : tx.type === 'refund' ? 'badge-warning' : 'badge-accent'}`}>{tx.type}</span>
+                        {tx.refundedAmount ? <span className="badge badge-warning ml-1">{tx.refundedAmount >= tx.amount ? 'refunded' : 'partial refund'}</span> : null}
                         {tx.scanned && <span className="badge badge-accent ml-1">OCR</span>}
                       </td>
                       <td className="table-cell">
@@ -155,6 +169,7 @@ export default function Transactions() {
                       </td>
                       <td className="table-cell">
                         <div className="flex gap-0.5 justify-end">
+                          {tx.type === 'expense' && !tx.refundOfId && <button onClick={() => { setRefundTxId(tx.id); setRefundAmount(String(tx.amount - (tx.refundedAmount || 0))); setRefundDate(todayISO()) }} className="p-1 t-muted hover:text-[var(--warning)]" title="Refund"><RotateCcw size={13} /></button>}
                           <button onClick={() => openEdit(tx)} className="p-1 t-muted hover:t-accent"><Pencil size={13} /></button>
                           <button onClick={() => setDeleteId(tx.id)} className="p-1 t-muted hover:text-[var(--danger)]"><Trash2 size={13} /></button>
                         </div>
@@ -227,6 +242,26 @@ export default function Transactions() {
           </div>
         </Modal>
       )}
+
+      {refundTxId && (() => {
+        const origTx = transactions.find(t => t.id === refundTxId)
+        return (
+          <Modal title="Issue Refund" onClose={() => setRefundTxId(null)} onSubmit={handleRefund}>
+            {origTx && <p className="text-sm t-secondary mb-3">Original: <span className="font-semibold t-primary">{origTx.description}</span> — {formatCurrency(origTx.amount, cur)}{origTx.refundedAmount ? ` (already refunded: ${formatCurrency(origTx.refundedAmount, cur)})` : ''}</p>}
+            <FormField label="Refund amount">
+              <input className="input" type="number" step="0.01" value={refundAmount} onChange={e => setRefundAmount(e.target.value)} />
+            </FormField>
+            <FormField label="Refund date">
+              <input className="input" type="date" value={refundDate} onChange={e => setRefundDate(e.target.value)} />
+            </FormField>
+            <p className="text-[11px] t-muted mb-3">This will credit the amount back to the original account and reduce category spending.</p>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setRefundTxId(null)} className="flex-1 btn-secondary">Cancel</button>
+              <button type="submit" className="flex-1 btn-primary">Issue Refund</button>
+            </div>
+          </Modal>
+        )
+      })()}
     </div>
   )
 }

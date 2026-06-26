@@ -1,5 +1,14 @@
 export type AccountType = 'bank' | 'cash' | 'credit_card' | 'loan' | 'income'
 
+export interface CreditCardStatement {
+  statementDate: string
+  dueDate: string
+  statementBalance: number
+  paid: boolean
+  paidAmount?: number
+  paidDate?: string
+}
+
 export interface Account {
   id: string
   name: string
@@ -13,10 +22,11 @@ export interface Account {
   creditLimit?: number | null
   statementDueDay?: number | null
   monthlyPayment?: number | null
+  statements?: CreditCardStatement[]
   createdAt: string
 }
 
-export type TransactionType = 'income' | 'expense' | 'transfer'
+export type TransactionType = 'income' | 'expense' | 'transfer' | 'refund'
 
 export interface CategoryDef {
   name: string
@@ -29,7 +39,7 @@ export const CATEGORY_TREE: CategoryDef[] = [
   { name: 'Utilities', subcategories: ['Electricity', 'Gas', 'Water', 'Internet', 'Phone'] },
   { name: 'Transportation', subcategories: ['Fuel', 'Parking', 'Public Transit', 'Vehicle Maintenance', 'Insurance'] },
   { name: 'Food & Dining', subcategories: ['Groceries', 'Restaurants', 'Coffee Shops', 'Delivery'] },
-  { name: 'Subscriptions', subcategories: ['Streaming Services', 'Software', 'Cloud Storage', 'Memberships'] },
+  { name: 'Recurring Payments', subcategories: ['Streaming Services', 'Software', 'Cloud Storage', 'Memberships', 'Rent', 'Internet', 'Insurance', 'Gym', 'Phone Plan'] },
   { name: 'Debt Payments', subcategories: ['Credit Cards', 'Student Loans', 'Personal Loans', 'Auto Loans'] },
   { name: 'Healthcare', subcategories: ['Insurance', 'Pharmacy', 'Medical Bills', 'Dental'] },
   { name: 'Entertainment', subcategories: ['Movies', 'Events', 'Gaming', 'Hobbies'] },
@@ -69,6 +79,8 @@ export interface Transaction {
   notes?: string
   scanned?: boolean
   billId?: string
+  refundOfId?: string
+  refundedAmount?: number
   lineItems: TransactionLineItem[]
   createdAt: string
 }
@@ -91,6 +103,7 @@ export interface Bill {
   paidDate?: string
   paidTransactionId?: string
   subscriptionId?: string
+  isRecurringPayment?: boolean
   notes?: string
   createdAt: string
 }
@@ -163,11 +176,13 @@ export interface DashboardData {
   overdueCount: number
   paidCount: number
   totalDueThisMonth: number
+  totalRecurringCost: number
+  totalSubscriptionsCost: number
   debtSummary: {
     totalOutstanding: number
     dueThisMonth: number
     billsDue: number
-    subscriptionsDue: number
+    recurringDue: number
     loanPaymentsDue: number
   }
 }

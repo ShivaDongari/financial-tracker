@@ -26,7 +26,7 @@ export default function CommandPalette() {
     { id: 'accounts', label: 'Accounts', Icon: Wallet, action: () => navigate('/accounts'), keywords: 'bank cash card' },
     { id: 'transactions', label: 'Transactions', Icon: ArrowLeftRight, action: () => navigate('/transactions'), keywords: 'activity expense income' },
     { id: 'bills', label: 'Bills & Payments', Icon: CalendarClock, action: () => navigate('/bills'), keywords: 'bill pay due' },
-    { id: 'subscriptions', label: 'Subscriptions', Icon: RefreshCw, action: () => navigate('/subscriptions'), keywords: 'recurring netflix' },
+    { id: 'subscriptions', label: 'Recurring Payments', Icon: RefreshCw, action: () => navigate('/subscriptions'), keywords: 'recurring netflix rent internet insurance gym subscription' },
     { id: 'budgets', label: 'Budgets', Icon: PiggyBank, action: () => navigate('/budgets'), keywords: 'limit spending' },
     { id: 'reports', label: 'Reports & Analytics', Icon: BarChart3, action: () => navigate('/reports'), keywords: 'chart trend tax forecast' },
     { id: 'scan', label: 'Scan Receipt', Icon: ScanLine, action: () => navigate('/scan'), keywords: 'ocr camera photo' },
